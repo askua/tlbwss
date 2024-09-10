@@ -5,19 +5,23 @@ It's an implements about "Transfer learning based on weights of similarity sampl
 and application".
 
 #### Software Architecture
-Software architecture is based on python 3.10+, tesorflow 2.4+, 
-
+Software architecture is based on python 3.10+, tesorflow 2.4+, xgboost, scikit-learn
+You need to install Graphviz （https://graphviz.org/download/） to visualize the neural network model
 #### Requirement
 matplotlib>=3.5.2  
 numpy>=1.22.4  
-pandas==2.2.2  
-pydot_ng==2.0.0  
-pygame==2.1.2  
-scikit_learn==1.1.2  
-scipy==1.14.1  
-seaborn==0.11.0  
-statsmodels==0.14.2  
-tensorflow_gpu>=2.4.0  
+pandas==2.2.2
+pydot_ng==2.0.0
+pygame==2.1.2
+scikit_learn==1.1.2
+scipy==1.14.1
+seaborn==0.11.0
+statsmodels==0.14.2
+tensorflow_gpu==2.9.0
+graphviz
+scikit-learn==1.1.2
+xgboost==2.1.1
+
 
 
 

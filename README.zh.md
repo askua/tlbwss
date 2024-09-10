@@ -4,8 +4,8 @@
 这是一种关于“基于相似性样本权重的测井评估方法的迁移学习”的实现和应用。
 
 #### 软件架构
-软件架构基于 python 3.10+、tesorflow 2.4+、
-
+软件架构基于 python 3.10+、tesorflow 2.4+、, xgboost, scikit-learn
+需要先安装Grpahviz（https://graphviz.org/download/）用于可视化绘制神经网络模型
 #### 要求
 matplotlib>=3.5.2  
 numpy>=1.22.4  
@@ -17,7 +17,9 @@ scipy==1.14.1
 seaborn==0.11.0  
 statsmodels==0.14.2  
 tensorflow_gpu>=2.4.0 
-
+graphviz
+scikit-learn==1.1.2
+xgboost==2.1.1
 #### 说明
 
 1. prepare_data_utils_notebooks 文件夹中有关于数据预处理的代码。
