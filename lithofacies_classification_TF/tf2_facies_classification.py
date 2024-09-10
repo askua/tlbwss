@@ -1,3 +1,8 @@
+# -*- coding： utf-8 -*-
+
+
+# # Import third-party packages（导入第三方包）
+
 
 import os
 import pandas as pd
@@ -31,7 +36,6 @@ from scipy import interpolate
 from pygame import mixer 
 
 
-
 # calculate RMSE
 from sklearn.metrics import mean_squared_error, confusion_matrix
 import matplotlib.colors as colors
@@ -49,7 +53,8 @@ print(tf.__version__)
 # tensorboard，tensorflow 版本为2.1.0  
 # pydot版本为1.4.1, graphviz 版本为0.13.2
 
-# ## 导入自己的包
+
+# ## Import our own package（导入自己的包）
 
 
 import senutil as sen
@@ -57,103 +62,106 @@ import senutil as sen
 import senmodels_classification as smsc
 
 
-
 mpl.rcParams['font.sans-serif'] = ['SimHei']
-plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
-plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
+# Used to display Chinese labels normally
+#用来正常显示中文标签
+plt.rcParams['font.sans-serif']=['SimHei']
+
+plt.rc('font',family='Times New Roman')
+
+# Used to display negative signs normally
+#用来正常显示负号
+plt.rcParams['axes.unicode_minus']=False
+
 set_option("display.max_rows", 15)
 set_option('display.width', 200)
 np.set_printoptions(suppress=True, threshold=5000)
 
 
-
-# 使用GPU训练时候，打开下面注释
+## 使用GPU训练时候，打开下面注释
+## When training with GPU, open the comments below
+# os.environ['CUDA_VISIBLE_DEVICES']='0'
+## using cpu training
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 
 
-# # 准备工作（数据处理，结果保存位置定义）
-
-# ## 定义数据集所在位置
-
-# ### 训练集所在位置
+# # Dataset preparation work（数据集准备工作）
 
 
-TrainDataPath = 'lithofacies_data/train/'
+# ## Define the location of the dataset（定义数据集所在位置）
+
+
+# ### Location of training set（训练集所在位置）
+
+
+TrainDataPath = '../data/lithofacies_data/train/'
 
 
 # filename_AB:  
-# (1) facies_vectors.csv
+# (1) lithofacies_vectors.csv
 
 
-filename_AB = 'GY-1_lithofacies_vectors_0.1.csv'      # 地质4口卡奔图-1-58_all_数据均衡.csv  train0413use_all.csv  train0415use_all.csv
-# facies_vectors.csv  地质4口卡奔图-1-58_all_R_0.1.csv  古页1_R_0.1m_整段_1500m-2746m.csv（13种岩相）
-# 地质4口卡奔图-1-58_all_R_0.02.csv  古页1_all_R_0.02-全.csv  英x58地质岩相-0512_facies_vectors_0.01.csv  古页1地质岩相-0512_facies_vectors_0.1.csv
+filename_AB = 'GY1-0512_lithofacies_vectors_0.02.csv'
+#examples:  train0413use_all.csv  train0415use_all.csv
+
 TrainDataPath = os.path.join(TrainDataPath,filename_AB)
 print(TrainDataPath)
 
 
-# ### 预测阶段测试集所在位置
+# ### Location of the testing set during the prediction phase(预测阶段测试集所在位置)
 
 
-TestDataPath = 'lithofacies_data/test/'
+TestDataPath = '../data/lithofacies_data/test/'
 
 
 # data/exp_curve_reconstract/exp_1/test/;   data/exp_curve_reconstract/val/
 
+
 # filename_A为预测曲线对应的常规曲线数据
-# filename_A : nofacies_data.csv
+# filename_A could be no lithofacies nofacies_data.csv
 
 
 filename_A =  'YX-58_lithofacies_vectors_0.1.csv'
-# YX-58_lithofacies_vectors_0.02.csv
-# 英x58地质岩相-0512_facies_vectors_0.01.csv  古页19_0428_R_0.1m.csv  古页17_0520_R_0.125m.csv  古页39_0428_R_0.1m.csv
-# 奥-34井_facies_vectors_0.1.csv   # Z-2911_lithofacies_vectors_0.1.csv  第三次训练  古页12_0428_R_0.1m.csv
-# 无矿物成分：古页12_R_0.1m_2050-2427m.csv    古页15_R_0.1m_整段_2050m-2530m.csv  古页2HC_R_0.1m_整段_2081m-2457m.csv
-# 有矿物成分曲线： 古页12_R_0.1m_0415测试.csv  古页15_R_0.1m_0415测试.csv 松页油2_0428_R_0.125m.csv
-
+# YX58地质岩相-0512_facies_vectors_0.01.csv  GY19_0428_R_0.1m.csv  GY17_0520_R_0.125m.csv  SYY2_0428_R_0.125m.csv
+# A34井_facies_vectors_0.1.csv   # Z2911_facies_vectors_0.1.csv  第三次训练  GY12_0428_R_0.1m.csv
 
 
 addR_well_name = filename_A.split(".")[0]
 TestDataPath = os.path.join(TestDataPath,filename_A)
 
 
-
 use_low_R_data = False
 
 
-# ### 真实岩相数据集所在位置
+# ### Location of the real lithofacies dataset(真实岩相数据集所在位置)
 
-# 用于真实岩相数据集与预测数据吻合度，实际中可能没有
+
+# Used for the consistency between real lithofacies datasets and predicted data, which may not be available in practice
+# (用于真实岩相数据集与预测数据吻合度，实际中可能没有)
 
 
 use_high_R_data = True #True # False
 
 
-
-# 高分辨率相对于低分辨率的倍数, default value = 10 (对应于0.1m); 8 (对应于0.125m)
-resolution = 8
-
+#  Sampling points of 1m, default value = 10 (对应于0.1m); 8 (对应于0.125m)
+resolution = 10
 
 
-HighRDataPath = 'lithofacies_data/test/'
-
-
-# filename_C_H为高分辨率元素曲线 filename_C_H: (1) YT2_YS_0.1m_shang.csv ; (2) YT2_YS_0.1m_xia.csv 
+HighRDataPath = '../data/lithofacies_data/testH/'
 
 
 filename_C_H = 'YX-58_lithofacies_vectors_0.1.csv'
-# 古页1地质岩相-0512_facies_vectors_0.1.csv  英x58地质岩相-0512_facies_vectors_0.01.csv
-# 奥-34井_facies_vectors_0.02.csv   # 赵-2911井_facies_vectors_0.02.csv
-# 奥-34井_facies_vectors_0.1.csv  古页1+英斜58地质岩相-0512_facies_vectors_0.05.csv
-
+# examples: 'YX-58_lithofacies_vectors_0.02.csv'
 
 
 HighRDataPath = os.path.join(HighRDataPath,filename_C_H)
 
 
-# # 模型定义
+# # Model Definition（模型定义）
 
-# ## 定义自变量
+
+# ## Define independent variables（定义自变量）
+
 
 # 定义要输入的维度AC、CNL、DEN、GR、RD、RS等
 
@@ -162,18 +170,18 @@ HighRDataPath = os.path.join(HighRDataPath,filename_C_H)
 # input_vectors = ["AC","CNL","DEN","GR","RLLD","RLLS"]
 # input_vectors = ["CAL","SP","GR","CNL","DT","DEN","MSFL","RS","RD"]
 input_vectors = ["GR","CNL","DT","DEN","MSFL","RS","RD"]
-
-# input_vectors = ["GR","CNL","DT","DEN","RS","RD"]
 # input_vectors = ["GR","CNL","DT","MSFL",'DWCALC','DWCLAY','DWDOLO','DWPLAG','DWQUAR']
 # input_vectors = ["GR","CNL","DT","MSFL","RD","RS"]
 # input_vectors = ["GR","CNL","DT","MSFL"]
 # input_vectors = ["GR","ILD_log10","DeltaPHI","PHIND","PE","NM_M","RELPOS"]
 
 
-# ## 定义因变量
+# ## Define dependent variable（定义因变量）
 
-# 定义要训练的参数模型
-# 读取岩相所在列训练数据，包括'SS', 'CSiS', 'FSiS', 'SiSh', 'MS','WS', 'D','PS', 'BS'等
+
+# Define the parameter model to be trained
+# Read the training data of the column where the lithofacies is located, including High organic matter layered shale lithofacies,
+# High organic striated layered shale lithofacies, Medium organic striated layered shale lithofacies, Low organic matter striated layered shale lithofacies, Medium to low organic matter massive dolomite lithofacies, Low organic matter massive shell limestone lithofacies, Low organic matter massive siltstone lithofacies,
 
 
 # 1=sandstone  2=c_siltstone   3=f_siltstone 
@@ -183,14 +191,23 @@ input_vectors = ["GR","CNL","DT","DEN","MSFL","RS","RD"]
 #        '#1B4F72','#2E86C1', '#AED6F1', '#A569BD', '#196F3D']
 
 
-
 # facies_colors = ['#632423','#007F00', '#999999','#339966','#99CC00','#00FF00','#7F7F7F','#FFCC99','#FFCC00','#993366','#FF9900', '#FF6600','#00CCFF']
 
 # facies_labels = ['SS', 'CSiS', 'FSiS', 'SiSh', 'MS','WS', 'D','PS', 'BS']
 
+#  Define lithofacies label =
+#  [High organic matter layered shale lithofacies,
+#  High organic striated layered shale lithofacies,
+# Medium organic striated layered shale lithofacies,
+# Low organic matter striated layered shale lithofacies,
+# Medium to low organic matter massive dolomite lithofacies,
+# Low organic matter massive shell limestone lithofacies,
+# Low organic matter massive siltstone lithofacies]
+
 facies_colors = ['#632423', '#0070C0','#00B0F0','#75DAFF','#00B050','#FFC000', '#FFFF00']
 facies_labels = ['高有机质层状页岩相', '高有机质纹层状页岩相','中有机质纹层状页岩相','低有机质纹层状页岩相',
                 '中低有机质块状白云岩相', '低有机质块状介壳灰岩相', '低有机质块状粉砂岩相']
+
 # 13类
 # facies_labels = ['其他','中有机质层状粘土质页岩','低有机质纹层状粘土质页岩','高有机质层状粘土质页岩','中有机质纹层状粘土质页岩','高有机质纹层状粘土质页岩','低有机质层状粘土质页岩', '低有机质纹层状长英质页岩','中有机质层状长英质页岩','高有机质层状长英质页岩','中有机质纹层状长英质页岩','高有机质纹层状长英质页岩', '介壳灰岩']
 
@@ -202,7 +219,7 @@ facies_labels = ['高有机质层状页岩相', '高有机质纹层状页岩相'
 
 element_name = str(len(input_vectors))  # SS | CSiS
 
-# 亚相分类
+# Sub-lithofacies classification 亚相分类
 # adjacent_facies = np.array([[1], [0,2], [1], [4], [3,5], [4,6,7], [5,7], [5,6,8], [6,7]])
 
 # adjacent_facies = np.array([[0],[1], [2], [1,2,3], [4], [5], [5,6]])
@@ -210,14 +227,17 @@ element_name = str(len(input_vectors))  # SS | CSiS
 # [12],[10], [6], [4],[3,5]
 
 
-
 # adjacent_facies = np.array([[12],[11,10,7], [9,8,6], [5,4,2],[1,3] [0]])
 
 adjacent_facies = np.array([[4],[0,1], [2,3], [3] [0]])
 
-# 岩相所在列
+
+
+
+
+# Column of lithofacies location in csv data(岩相所在列）
 facies_labels_col = "Facies"
-# 深度列名称
+# Depth column name（深度列名称）
 DEPTH_col_name = "DEPTH"
 
 #facies_color_map is a dictionary that maps facies labels
@@ -230,12 +250,13 @@ def label_facies(row, labels):
     return labels[ row[facies_labels_col] -1]
 
 
-# 样本权重
+# sampling weight（样本权重）
 weight_coloum = "sample_weight"
-class_weight = None #  {0:0.22, 1:0.01,2:0.02,3:0.03,4:0.30,5:0.38,6:0.04}   
-# None |  'auto' | {0:0.22, 1:0.01,2:0.02,3:0.03,4:0.30,5:0.38,6:0.04} 
+class_weight = None
 
-# ## 选择要使用的模型
+
+# ## Select the model to be used（选择要使用的模型）
+
 
 # 择要使用的模型类型model_type:  
 # (1)'RBF'(flag = 1);   
@@ -246,16 +267,16 @@ class_weight = None #  {0:0.22, 1:0.01,2:0.02,3:0.03,4:0.30,5:0.38,6:0.04}
 # (6) (暂未完成)  'NAS','IndyGRU','LSTM-GRU','IndyLSTM','UGRNNCell';
 
 
-# BLSTM ； MyWaveNet; BLSTM-Atten   Bilstm_Capsule
+ # BLSTM ； MyWaveNet; BLSTM-Atten   Bilstm_Capsule
 # model_type =  'DNN'  # 'MyWaveNet'   'MyUNet'   'Bilstm_Capsule'
-# model_type = 'BiGRU-self-Atten'   # Bigru_Multihead_Self_Atten Bigru_Multihead_Self_Atten   Multihead_Self_Atten(Bilstm)
-# model_type = 'RBF'  # Bigru_Multihead_Self_Atten_RBF
-# model_type = 'Bigru_Multihead_Self_Atten_RBF'  # (1) MyWaveNet;  (4)BiLSTM-Atten5; (6) BiGRU-Atten2;
-# model_type = 'Bigru_Multihead_Self_Atten_DNN'   # Bigru_Multihead_Self_Atten_DNN
+# model_type = 'Bigru_Multihead_Self_Atten'   # Bigru_Multihead_Self_Atten   Multihead_Self_Atten(Bilstm)
+# model_type = 'BiGRU-self-Atten'  # Bigru_Multihead_Self_Atten_RBF
+# model_type = 'Bigru_Multihead_Self_Atten_RBF'  # (1) MyWaveNet;  (4)BiLSTM-Atten5; (6) BiGRU-Atten2; Bigru_Multihead_Self_Atten_DNN
+model_type = 'Bigru_Multihead_Self_Atten_DNN'   # Bigru_Multihead_Self_Atten_DNN   # (MHSA in papers)
 
-model_type = 'Double_Expert_Net'
 
-# ## 设置和模型相关的参数
+# ## Set and model related parameters(设置和模型相关的参数)
+
 
 flag = 0
 
@@ -270,53 +291,61 @@ elif model_type == "Capsule":
 else:
     flag = 3
 
-# ## 初始化训练模型结构参数
 
-# 网络结构参数来自与senmodels模块
+# ## Initialize the training model structure parameters(初始化训练模型结构参数)
+
+
+# The network structure parameters come from the senmodels_classification module(网络结构参数来自与senmodels模块)
 
 
 # MAX_SAMPLE_NUM = 2000
-# 输入维度
+# Input dimension--输入维度
 data_dim = len(input_vectors)
-seq_length = 10 # 序列长度数 default 10,  TT1:4  J404:8   default:20
-hidden_dim = 49 # 隐藏层神经元数 default 49 |   20  16   24  49
-# 输出维度
+seq_length = 20 # 序列长度数 default 10,  TT1:4  J404:8
+hidden_dim = 49 # 隐藏层神经元数 default   20  16   24
+# Output dimension--输出维度
 output_dim = len(facies_labels)
-n_layers = 3 # LSTM layer 层数 default 4  
-dropout_rate = 0.4   # 在训练过程中设置 default 0.2  ,Na,0.4
+n_layers = 5 # LSTM layer 层数 default 4  
+dropout_rate = 0.2   # 在训练过程中设置 default 0.2  ,Na,0.4
 
 # 修改下面的参数不改变网络
-learning_rate = 0.0002  # default 0.002 0.01, 优选：0.005 ；0.008 可用0.0008 0.0005 0.001
+learning_rate = 0.005  # default 0.002 0.01, 优选：0.005 ；0.008 可用0.0008 0.0005 0.001
 # batch_size = 100 Na:
-BATCH_SIZE = 100
+BATCH_SIZE = 640
 # iterations = 300
 EPOCHS = 30
 
 # input_vectors_dim = len(input_vectors)
-# 是否使用batch_size_strategy default False , | True
-batch_size_strategy = False
+
 
 model_para = smsc.MyModelParameter(data_dim,seq_length, hidden_dim, output_dim,learning_rate,dropout_rate,n_layers,BATCH_SIZE,EPOCHS)
+
 model_para.n_layers
 
 
-# ## 设定是训练操作还是测试操作
+# ## Is the setting a training operation or a testing operation(设定是训练操作还是测试操作)
+
+
 # 模型有两种阶段：  "train"(训练) | "test"(测试)
 
-model_stage = "train"
-model_stage = "test"
 
-# 训练模型是否使用样本权重
+model_stage = "train"
+# model_stage = "test"
+
+
+# Does the training model use weights（训练模型是否使用权重）
+
+
 train_use_weight = False
+
 
 train_use_class_weight = False
 
 
-# 是否训练分辨率增加模型，default:False | True
+# 
 
 
 train_add_R_model = False
-
 
 
 if model_stage == "train":
@@ -328,56 +357,62 @@ else:
 print(well_name,train_well_name)
 
 
-
+# Whether to play music after completing the training
 # 训练完成是否播放音乐 True | False
 paly_music = True
 
 
-
 # 是否保存训练日志：default : False | True， 保存日志可以用tensorboard显示实时计算日志，但是日志文件占用空间
 save_logs = False #True
+
 # 训练日志保存位置
 log_path = os.path.join("logs/")
+if os.path.exists(log_path):
+    pass
+else:
+    os.makedirs(log_path)
+
+
+
+
+# 是否使用batch_size_strategy default False , | True
+batch_size_strategy = False
+
 
 # 两种学习率适应方法:  default = 0
 #(1)每隔10个epoch，学习率减小为原来的1/10, set value = 1;
 #(2)当学习停滞时，减少2倍或10倍的学习率常常能获得较好的效果。value = 2
-# (3) 
-learning_rate_deacy_policy = 2
-
+learning_rate_deacy_policy = 2 
 
 
 use_semi_seqlength = True
 
 
-
+# Do you want to draw a model diagram
 # 是否绘制模型图 default = False；  Value：True | False
 plot_modelnet = True
 
 
-# ## 训练阶段模型保存位置
+# ## Location for saving the model during the training phase(训练阶段模型保存位置)
 
 
 print(model_stage)
 
 
-
 Date = sen.tid_date()
-child_dir_name = train_well_name + '_Seq_'+ str(seq_length)+  "/"
-custom_model_child_dir = "facies_Seq_8_WaveNet/"
-
+child_dir_name = train_well_name + '_Seq_'+ str(seq_length) + "_" + str(model_type) + "/"
+custom_model_child_dir = ""
 
 
 # 设置模型保存的文件夹
-model_save_path = os.path.join("model/", 'facies_' + model_type.lower() + "_train/")
+model_save_path = os.path.join("model/", 'lithosfacies_' + model_type.lower() + "_train/")
 #model_save_path = os.path.join("model/", 'facies_' + model_type.lower() + "_train/",child_dir_name)
 if os.path.exists(model_save_path):
     model_path = model_save_path
 else:
-    os.mkdir(model_save_path)
+    os.makedirs(model_save_path)
     model_path = model_save_path
 print(model_path)
-
 
 
 model_name = train_well_name + "_" + model_type.lower() + "_" + str(len(input_vectors)) + '-facies_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
@@ -387,7 +422,7 @@ print("model_name:",model_name)
 print("model_file:",model_file)
 
 
-
+# Define the JSON for saving the model
 # 定义模型保存的json_name
 json_name = train_well_name + "_" + model_type.lower() + "_" + str(len(input_vectors)) + '-facies_'+ '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
         learning_rate) + "h_dim" + str(hidden_dim) + "_seq_length_" + str(seq_length) + "_epoch_" + str(EPOCHS) + ".json"
@@ -395,7 +430,7 @@ model_json = model_path + json_name
 print(model_json)
 
 
-# ## 测试操作加载模型存放位置
+# ## Test operation loading model storage location（测试操作加载模型存放位置)
 
 
 if model_stage == "test":   
@@ -413,7 +448,8 @@ if model_stage == "test":
         
 
 
-# ## 定义算法结果图表文字保存位置
+
+# ## Define the location for saving algorithm results, charts, and text（定义算法结果图表文字保存位置）
 
 
 if model_stage == "train":
@@ -422,27 +458,22 @@ if model_stage == "train":
     # end_depth = depth_log[-1][0]
     
     training_img_file_saving_path = 'model_training_images/'
-    if not os.path.exists(os.path.join(training_img_file_saving_path,child_dir_name)):
-        os.mkdir(os.path.join(training_img_file_saving_path,child_dir_name))
-    model_training_img_file_saving_path = os.path.join(training_img_file_saving_path, child_dir_name, model_type.lower())
+    model_training_img_file_saving_path = os.path.join(training_img_file_saving_path,child_dir_name)
     model_training_img_name =  model_type + "_" + well_name + "_"+ element_name
     
     if not os.path.exists(model_training_img_file_saving_path):
-        os.mkdir(model_training_img_file_saving_path)
-
+        os.makedirs(model_training_img_file_saving_path)
 
 
 if model_stage == "test": 
 
     testing_img_file_saving_path = 'model_testing_images/'
+    child_test_dir_name = model_type # model_type
+    model_testing_img_file_saving_path = os.path.join(testing_img_file_saving_path,child_test_dir_name)
     model_testing_image_name =  model_name.split(".h5")[0] + "_" + well_name + "_" + element_name    # model_type + "_" + well_name + "_" + element_name
     
-    model_testing_img_file_saving_path = os.path.join(testing_img_file_saving_path, child_dir_name, model_type.lower())
-    if not os.path.exists(os.path.join(testing_img_file_saving_path,child_dir_name)):
-        os.mkdir(os.path.join(testing_img_file_saving_path,child_dir_name))
     if not os.path.exists(model_testing_img_file_saving_path):
         os.mkdir(model_testing_img_file_saving_path)
-
 
 
 font={'family':'SimHei',
@@ -453,19 +484,21 @@ font={'family':'SimHei',
 }
 
 
-
 csv_file_saving_path = os.path.join("facies_csv_results/")
 if model_stage == "test": 
     csv_file_saving_path = os.path.join("facies_csv_results/", model_type.lower() + "_test/")
 else:
     csv_file_saving_path = os.path.join("facies_csv_results/", model_type.lower() + "_train/")
 if not os.path.exists(csv_file_saving_path):
-    os.mkdir(csv_file_saving_path)
+    os.makedirs(csv_file_saving_path)
 print(csv_file_saving_path)
 
 
-# # 数据加载及处理
+# # Data loading and processing（数据加载及处理）
 
+
+# When calling the read_csv() method of pandas, C engine is used as the parser engine by default. However, when the file name contains Chinese, using C engine may cause errors in some cases. So specifying engine as Python when calling the read_csv() method can solve the problem.
+# 
 # 调用pandas的read_csv()方法时，默认使用C engine作为parser engine，而当文件名中含有中文的时候，用C engine在部分情况下就会出错。所以在调用read_csv()方法时指定engine为Python就可以解决问题了。
 
 
@@ -482,7 +515,6 @@ else:
     print("Testing data loading....")
 
 
-
 if model_stage == "train":
     # print(AB_use)
     print(len(AB_use.columns))
@@ -493,18 +525,14 @@ else:
     a = A_read.columns.tolist()
 
 
-
 # if model_stage == "train":
 #     print(set(AB_use['Well Name']),DEPTH_col_name)
-
 
 
 # AB_use
 
 
-
 facies_colors
-
 
 
 def make_facies_log_plot(logs, facies_colors):
@@ -550,7 +578,6 @@ def make_facies_log_plot(logs, facies_colors):
     f.suptitle('Well: %s'%logs.iloc[0]['Well Name'], fontsize=14,y=0.94)
 
 
-
 use_depth_log = False
 if model_stage == "train":
     # 绘制训练段曲线
@@ -577,7 +604,7 @@ if model_stage == "train":
             cucao_depth.shape = (len(cucao_depth),)
             begin_depth = depth_log[0][0]
             end_depth = depth_log[-1][0]
-            # print("Well Name",k)
+            print("Well Name",k)
             print("begin_depth",begin_depth,"end_depth",end_depth)
             make_facies_log_plot(AB_use,facies_colors)
             #plt.show()
@@ -603,13 +630,13 @@ else:
 print("use_depth_log:",use_depth_log)
 
 
-
 facies_labels[-1]
 
 
-# ## 设置自变量应变量数据
+# ## Set independent variable and dependent variable data（设置自变量应变量数据）
 
-# 电阻率曲线取对数值
+
+# Take logarithmic value of resistivity curve（电阻率曲线取对数值）
 
 
 if model_stage == "train":
@@ -632,14 +659,14 @@ else:
 # ### 电阻率取对数
 
 
-electric_log = ["RD","RS","RLLD","RLLS","MSFL"]
-for item in electric_log:
-    if item in input_vectors:
-        print(item)
-        for i in range(len(inputX)):
-            if (inputX.loc[:,item][i]) <= 0.01:
-                inputX.loc[:,item][i] = 0.01 
-        inputX.loc[:,item] = np.log10(inputX.loc[:,item])
+# electric_log = ["RD","RS","RLLD","RLLS","MSFL"]
+# for item in electric_log:
+#     if item in input_vectors:
+#         print(item)
+#         for i in range(len(inputX)):
+#             if (inputX.loc[:,item][i]) <= 0.01:
+#                 inputX.loc[:,item][i] = 0.01 
+#         inputX.loc[:,item] = np.log10(inputX.loc[:,item])
     
 
 
@@ -650,19 +677,19 @@ constant_value = 5
 # ### 线性变换渗透率范围
 
 
-if "渗透率" in a:
-    inputY.loc[:,element_name] = np.log10(inputY.loc[:,element_name]) + constant_value
-    inputY_calc.loc[:,reference] = np.log10(inputY_calc.loc[:,reference]) + constant_value
+# if "渗透率" in a:
+#     inputY.loc[:,element_name] = np.log10(inputY.loc[:,element_name]) + constant_value
+#     inputY_calc.loc[:,reference] = np.log10(inputY_calc.loc[:,reference]) + constant_value
 
 
-# ## 训练数据类别分布
+# ## Category distribution of training data(训练数据类别分布)
 
 
 if model_stage == "train":
     AB_use.dropna().reset_index(drop = True)
 
 
-# ## 归一化操作
+# ## Normalization operations(归一化操作)
 
 
 # 设置输入曲线范围,由于取了对数，所以RD和RS设置下限-1
@@ -698,7 +725,6 @@ DWPLAG = [0.01, 0.8]
 DWQUAR = [0.01, 0.8]
 
 
-
 # # 测井曲线计算的物性参数
 # POR_CALC = [0,17]
 # SW_CALC = [4,100]
@@ -727,7 +753,6 @@ u_log = {"DT":DT,"AC": AC,"CNL": CNL, "DEN": DEN, "GR": GR, "RD": RD, "RS": RS,"
 # e_CALC_log = {"DT":DT,"DTS":DTS,"DTC":DTC,"AC": AC, "CNL": CNL, "DEN": DEN, "GR": GR, "RD": RD, "RS": RS,"RLLD": RLLD, "RLLS": RLLS}
 
 
-
 u_log_name = []
 # 关键在于 input_vectors''
 for i in input_vectors:
@@ -736,19 +761,16 @@ for i in input_vectors:
 u_log_name
 
 
-
 # e_log_name = []
 # for i in element:
 #     e_log_name.append(e_log[i])
 # e_log_name
 
 
-
 # e_calc_log_name = []
 # for i in reference:
 #     e_calc_log_name.append(e_CALC_log[i])
 # e_calc_log_name
-
 
 
 # def zero_one_scaler(data,log_name):
@@ -772,24 +794,23 @@ u_log_name
 #     return  result
 
 
-
 #inputY
-
 
 
 # min(inputY-1)
 
 
-# ## 岩相类别编号变换
+# ## Lithofacies category number transformation
 
 
-AB_G = sen.zero_one_scaler(inputX,u_log_name)
+# AB_G = sen.zero_one_scaler(inputX,u_log_name)
+
+# 不做归一化
+AB_G = inputX
 print(AB_G.shape)
 
 
-
 set(facies_labels)
-
 
 
 class_begin = 0  # default = 0, 默认类别标签从0开始
@@ -817,7 +838,6 @@ if model_stage == "train" or model_stage == "test":
     print(AB_Y_calc_G.shape)
 
 
-
 facies_labels_use = []
 facies_colors_use = []
 
@@ -842,13 +862,10 @@ facies_counts.plot(kind='bar',color=facies_colors_use,
 print(facies_counts)
 
 
-
 facies_colors_use
 
 
-
 facies_labels_use
-
 
 
 if model_stage == "train":
@@ -856,11 +873,10 @@ if model_stage == "train":
     print(np.unique(AB_use[facies_labels_col]))
 
 
-# ### 绘制归一化后的曲线
+# ### Draw the normalized curve(绘制归一化后的曲线)
 
 
 facies_labels_col
-
 
 
 def make_facies_log_plot_2(logs,sample_index, facies_colors):
@@ -914,31 +930,28 @@ def make_facies_log_plot_2(logs,sample_index, facies_colors):
     if model_stage == "train":
         pred_image_save_path = model_training_img_file_saving_path 
         pred_image_name = model_training_img_name
-        plt.savefig(os.path.join(model_training_img_file_saving_path , model_training_img_name +  str(well_name) + '_tendency.png'), dpi=96,  bbox_inches='tight')
+        plt.savefig(model_training_img_file_saving_path + model_training_img_name +  str(well_name) + '_tendency.png', dpi=96,  bbox_inches='tight')
 
     else:
         pred_image_save_path = model_testing_img_file_saving_path 
         pred_image_name = model_testing_image_name
-        plt.savefig(os.path.join(pred_image_save_path , pred_image_name + '_PredictionAll.png'), dpi=96,  bbox_inches='tight')
-
+        plt.savefig(pred_image_save_path + pred_image_name + '_PredictionAll.png', dpi=96,  bbox_inches='tight')
 
 
 sample_index = np.arange(len(AB_G))
 # sample_index
 
 
-
 # type(inputY)
-
 
 
 if model_stage == "train":
     df_data = pd.concat([AB_G,inputY],axis=1)
     make_facies_log_plot_2(df_data,sample_index,facies_colors) 
- 
+    plt.show()
 
 
-# ## 输入自变量数据准备
+# ## Input the independent variables data preparation(输入自变量数据准备)
 
 
 if model_stage == "train":
@@ -947,17 +960,17 @@ if model_stage == "train":
 AB_X = np.array(AB_G)
 
 
-
 AB_X
-
 
 
 # AB_Y[1000]
 
 
-# ### 训练集验证集划分
+# ### Split the training set and the validation set(训练集验证集划分)
 
-# 根据模型需要判定是否需要序列化
+
+# Determine whether serialization is required based on the needs of the model
+# (根据模型需要判定是否需要序列化)
 
 
 if (flag == 1) or (flag == 2):
@@ -994,13 +1007,13 @@ else:
         dataY_calc = sen.build_All_Y_dataset( AB_Y_calc, seq_length)
         weight_matrix = sen.build_All_Y_dataset(sample_weight,seq_length)
             # 使用model_selection.ShuffleSplit抽取样本
-#         sss = model_selection.ShuffleSplit(n_splits = 10, test_size=0.2, random_state=0)
-#         for train_index, test_index in sss.split(dataX):
-#         # print("TRAIN:", train_index, "TEST:", test_index)
-#             trainX, testX = dataX[train_index], dataX[test_index]
-#             trainY, testY = dataY[train_index], dataY[test_index]
-#             train_Y_calc, test_Y_calc = dataY_calc[train_index], dataY_calc[test_index]
-#             train_weight, test_weight = weight_matrix[train_index],weight_matrix[test_index]
+        sss = model_selection.ShuffleSplit(n_splits = 10, test_size=0.2, random_state=0)
+        for train_index, test_index in sss.split(dataX):
+        # print("TRAIN:", train_index, "TEST:", test_index)
+            trainX, testX = dataX[train_index], dataX[test_index]
+            trainY, testY = dataY[train_index], dataY[test_index]
+            train_Y_calc, test_Y_calc = dataY_calc[train_index], dataY_calc[test_index]
+            train_weight, test_weight = weight_matrix[train_index],weight_matrix[test_index]
         trainX, testX = dataX, dataX
         trainY, testY = dataY, dataY
         train_Y_calc, test_Y_calc = dataY_calc, dataY_calc
@@ -1015,11 +1028,10 @@ else:
         DEPTH_AddReslution = None
 
 
-
 # len(depth_log)
 
 
-# ### 确认输入维度
+# ### Confirm the input dimension(确认输入维度)
 
 
 if (flag == 1) or (flag == 2):
@@ -1042,13 +1054,13 @@ else:
         print("testALL_A_X.shape:", testALL_A_X.shape,"\n","input_vectors.length:",len(input_vectors))
 
 
-
 # train_weight
 
 
-# # 网络实例化
+# # Network instantiation(网络实例化)
 
-# ## 构建网络或载入模型
+
+# ## Build a network or load a model(构建网络或载入模型)
 
 
 def model_type_select(model_type):
@@ -1081,8 +1093,6 @@ def model_type_select(model_type):
         return smsc.wavenet_model(model_para)
     elif model_type == 'MyWaveNet':
         return smsc.wavenet_model2(model_para)
-    elif model_type == 'Double_Expert_Net':
-        return smsc.double_experts_Net_model(model_para)   
     elif model_type == 'MyUNet':
         return smsc.my_unet(model_para)
     elif model_type == 'Bilstm_Capsule':
@@ -1113,14 +1123,279 @@ def model_type_select(model_type):
         return smsc.bi_lstm_cell_model(model_para)
 
 
-
 if model_stage == "test":
     print(pred_model_file)
 
 
+# from attention_layer import AttentionLayer
+# from tensorflow.keras import backend as Kbackend
+# from tensorflow.keras.layers import Activation,Lambda, Multiply, Add, Concatenate
+# import tensorflow as tf
+# # import keras
+# from tensorflow.keras.layers import Layer
+# from tensorflow.keras import initializers, regularizers, constraints
+# from tensorflow.keras.initializers import RandomUniform, Initializer, Constant
+# from tensorflow import keras
+# from tensorflow.keras import layers
+# # from keras_self_attention import SeqSelfAttention
+# import numpy as np
+# from sklearn.cluster import KMeans
+# from tensorflow.keras.models import Model
+# from tensorflow.keras.layers import Input, Conv1D, Dense, Activation, Dropout, Lambda, Multiply, Add, Concatenate
+# from tensorflow.keras.layers import GlobalAveragePooling1D, MaxPool1D, GlobalMaxPool1D, UpSampling1D
+# from tensorflow.keras.layers import Concatenate,concatenate
+
+# def wavenet_atten_model(model_parameter):
+#     # convolutional operation parameters
+#     n_filters = model_parameter.hidden_dim # 32 
+#     filter_width = 2
+#     # dilation_rates = [2**i for i in range(8)] * 2   # 
+#     # dilation_rates = [2**i for i in range(model_parameter.seq_length)] * 2
+#     dilation_rates = [2**i for i in range(model_parameter.seq_length)] * 2 
+    
+#     # define an input history series and pass it through a stack of dilated causal convolution blocks. 
+#     history_seq = Input(shape=(model_parameter.seq_length, model_parameter.data_dim))
+#     x = history_seq
+    
+#     # 增加正则化层-2020-03-20
+#     x = tf.keras.layers.BatchNormalization()(x)
+    
+#     skips = []
+#     for dilation_rate in dilation_rates:
+        
+#         # preprocessing - equivalent to time-distributed dense
+#         # x = Conv1D(16, 1, padding='same')(x) data_dim
+#         # x = Conv1D(model_parameter.seq_length * 2, 1, padding='same')(x)
+#         x = Conv1D(model_parameter.data_dim * 4, 1, padding='same')(x)
+ 
+        
+#         # filter convolution
+#         x_f = Conv1D(filters=n_filters,
+#                     kernel_size=filter_width, 
+#                     padding='causal',
+#                     dilation_rate=dilation_rate)(x)
+        
+#         # gating convolution
+#         x_g = Conv1D(filters=n_filters,
+#                     kernel_size=filter_width, 
+#                     padding='causal',
+#                     dilation_rate=dilation_rate)(x)
+        
+#         # multiply filter and gating branches
+#         # z = Multiply()([Activation('tanh')(x_f),
+#         #                Activation('sigmoid')(x_g)])
+#         z = Multiply()([Activation('tanh')(x_f),
+#                         Activation('relu')(x_g)])
+        
+#         # postprocessing - equivalent to time-distributed dense
+#         # z = Conv1D(16, 1, padding='same')(z)
+#         # z = Conv1D(model_parameter.seq_length * 2, 1, padding='same')(z)
+#         z = Conv1D(model_parameter.data_dim * 4, 1, padding='same')(z)
+        
+        
+#         # residual connection
+#         x = Add()([x, z])
+
+# #         repeated_word_attention = tf.keras.layers.RepeatVector(model_parameter.hidden_dim * 4)(attention_layer)
+# #         repeated_word_attention = tf.keras.layers.Permute([2, 1])(repeated_word_attention)
+# #         sentence_representation = tf.keras.layers.Multiply()([z, repeated_word_attention])
+    
+# #         # sentence_representation = tf.keras.layers.Lambda(lambda x: Kbackend.sum(x, axis=1))(sentence_representation)
+# #         # skips.append(sentence_representation) 
+# #         z = tf.keras.layers.Lambda(lambda x: Kbackend.sum(x, axis=1))(sentence_representation)
+#         # collect skip connections
+#         skips.append(z)
+
+#     # add all skip connection outputs 
+# #     out = Activation('relu')(Concatenate()(skips))
+# #     out = Activation('relu')(Add()(skips))
+#     out = Add()(skips)
+
+#     # final time-distributed dense layers 
+#     # out = Conv1D(128, 1, padding='same')(out)
+#     out = Conv1D(model_parameter.data_dim * 2, 1, padding='same')(out)
+#     # out = Activation('relu')(out)
+#     out = Dropout(model_parameter.dropout_rate)(out)
+#     out = Conv1D(1, 1, padding='same')(out)
+#     out = GlobalAveragePooling1D()(out)
+# #     out = AttentionLayer()(out)
+    
+#     pred_seq_train = layers.Dense(model_parameter.output_dim)(out)
+#     # pred_seq_train = Dropout(model_parameter.dropout_rate)(pred_seq_train)
+
+#     # extract the last 60 time steps as the training target
+#     # def slice(x, seq_length):
+#     #     return x[:,-seq_length:,:]
+
+#     # pred_seq_train = Lambda(slice, arguments={'seq_length':model_parameter.seq_length})(out)
+
+#     model = Model(history_seq, pred_seq_train)
+    
+#     optimizer = tf.keras.optimizers.Adam(model_parameter.learning_rate)
+#     # optimizer = tf.keras.optimizers.RMSprop(model_parameter.learning_rate)
+#     # loss = 'mse', 'mean_squared_error', 'huber_loss'
+#     my_loss = 'mse'
+#     model.compile(optimizer=optimizer,
+#                   loss = my_loss,
+#                   metrics=['mae', 'mse'])
+#     return model
 
 
-# ## 模型可视化
+from tensorflow import keras
+from tensorflow.keras import initializers
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Layer
+
+class My_Attention_layer(tf.keras.layers.Layer):
+    """
+        Attention operation, with a context/query vector, for temporal data.
+        Supports Masking.
+        Follows the work of Yang et al. [https://www.cs.cmu.edu/~diyiy/docs/naacl16.pdf]
+        "Hierarchical Attention Networks for Document Classification"
+        by using a context vector to assist the attention
+        # Input shape
+            3D tensor with shape: `(samples, steps, features)`.
+        # Output shape
+            2D tensor with shape: `(samples, features)`.
+        :param kwargs:
+        Just put it on top of an RNN Layer (GRU/LSTM/SimpleRNN) with return_sequences=True.
+        The dimensions are inferred based on the output shape of the RNN.
+        Example:
+            model.add(LSTM(64, return_sequences=True))
+            model.add(AttentionWithContext())
+        """
+ 
+    def __init__(self,
+                 W_regularizer=None, b_regularizer=None,
+                 W_constraint=None, b_constraint=None,
+                 bias=True,supports_masking = True,initializer = None,initializer_bias = None, **kwargs):
+ 
+        self.supports_masking = True
+        self.initializer = initializers.get('glorot_uniform')
+        self.initializer_bias = initializers.get('zero')
+ 
+        self.W_regularizer = regularizers.get(W_regularizer)
+        self.b_regularizer = regularizers.get(b_regularizer)
+ 
+        self.W_constraint = constraints.get(W_constraint)
+        self.b_constraint = constraints.get(b_constraint)
+ 
+        self.bias = bias
+        super(My_Attention_layer, self).__init__(**kwargs)
+ 
+    def build(self, input_shape):
+        assert len(input_shape) == 3
+ 
+        self.W = self.add_weight(name='{}_W'.format(self.name),
+                                  shape=(input_shape[-1], input_shape[-1]),
+                                 initializer=self.initializer,
+                                 regularizer=self.W_regularizer,
+                                 constraint=self.W_constraint)
+        if self.bias:
+            self.b = self.add_weight(name='{}_b'.format(self.name),
+                                      shape=(input_shape[-1],),
+                                     initializer = self.initializer_bias,
+                                     regularizer=self.b_regularizer,
+                                     constraint=self.b_constraint)
+ 
+        super(My_Attention_layer, self).build(input_shape)
+ 
+    def compute_mask(self, input, input_mask=None):
+        # do not pass the mask to the next layers
+        return None
+ 
+    def call(self, x, mask=None):
+        uit = Kbackend.dot(x, self.W)
+ 
+        if self.bias:
+            uit += self.b
+ 
+        uit = Kbackend.tanh(uit)
+ 
+        a = Kbackend.exp(uit)
+ 
+        # apply mask after the exp. will be re-normalized next
+        if mask is not None:
+            # Cast the mask to floatX to avoid float64 upcasting in theano
+            a *= Kbackend.cast(mask, Kbackend.floatx())
+ 
+        # in some cases especially in the early stages of training the sum may be almost zero
+        # and this results in NaN's. A workaround is to add a very small positive number to the sum.
+        # a /= K.cast(K.sum(a, axis=1, keepdims=True), K.floatx())
+        a /= Kbackend.cast(Kbackend.sum(a, axis=1, keepdims=True) + Kbackend.epsilon(), Kbackend.floatx())
+        # print(a)
+        # a = K.expand_dims(a)
+        # print(x)
+        weighted_input = x * a
+        # print(weighted_input)
+        return Kbackend.sum(weighted_input, axis=1)
+ 
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], input_shape[1])
+    
+    # https://zhuanlan.zhihu.com/p/86886620
+    # 一般来说，父类的config也是需要一并保存的，在自定义网络层时重写get_config
+    # 其中base_config即是父类网络层实现的配置参数，最后把父类及继承类的config组装为字典形式即可解决该问题！
+    def get_config(self):
+        config = {
+            "supports_masking":self.supports_masking,
+            "initializer":self.initializer,
+            "initializer_bias":self.initializer_bias,
+            "W_regularizer":self.W_regularizer, 
+            "b_regularizer":self.b_regularizer,
+            "W_constraint":self.W_constraint, 
+            "b_constraint":self.b_constraint,
+            "bias":self.bias,
+                 }
+        base_config = super(My_Attention_layer, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+    
+# 原文链接：https://blog.csdn.net/mpk_no1/java/article/details/72862348
+
+
+# from keras_self_attention import SeqSelfAttention
+
+
+def bigru_self_atten_model(model_parameter):
+    lstm_dim = 50  # 替换model_parameter.hidden_dim
+    input_data = tf.keras.layers.Input(shape=(model_parameter.seq_length,model_parameter.data_dim))
+    input_data_G = tf.keras.layers.BatchNormalization()(input_data)
+    bigru = input_data_G  
+    skips = []
+
+    for i in range(model_parameter.n_layers):
+        bigru = tf.keras.layers.Bidirectional(tf.keras.layers.GRU(model_parameter.hidden_dim * 2,return_sequences=True))(bigru)
+        # bigru = tf.keras.layers.Dropout(model_parameter.dropout_rate)(bigru)
+        
+        attention_layer = My_Attention_layer()(bigru)
+        
+        # print(attention_layer)
+#       # old-attention
+#         # attention_layer = Attention_layer(name='Attention_')(bigru)
+#         repeated_word_attention = tf.keras.layers.RepeatVector(model_parameter.hidden_dim * 4)(attention_layer)
+#         repeated_word_attention = tf.keras.layers.Permute([2, 1])(repeated_word_attention)
+#         sentence_representation = tf.keras.layers.Multiply()([bigru, repeated_word_attention])
+    
+#         sentence_representation = tf.keras.layers.Lambda(lambda x: Kbackend.sum(x, axis=1))(sentence_representation)        
+#         skips.append(sentence_representation)
+        skips.append(attention_layer)
+    
+
+    out_block = Activation('relu')(Concatenate()(skips))
+    
+    bigru_output = tf.keras.layers.Dense(model_parameter.output_dim, activation='softmax', name='fianl_class_output')(out_block)
+
+    my_optimizer = tf.keras.optimizers.Adam(model_parameter.learning_rate)
+
+    model = tf.keras.models.Model(inputs=[input_data],
+                outputs=[bigru_output])
+    # model.compile(loss='categorical_crossentropy', optimizer=my_optimizer,metrics=['accuracy'])
+    model.compile(loss = smsc.FocalLoss(alpha=1), optimizer = my_optimizer,metrics=['accuracy'])
+
+    return model
+
+
+# ## Model visualization(模型可视化)
 
 
 from distutils.util import strtobool
@@ -1128,11 +1403,9 @@ TF_KERAS = strtobool(os.environ.get('TF_KERAS', '0'))
 print(TF_KERAS)
 
 
-
 # TF_KERAS
 if model_stage == "test":
     print(pred_model_json)
-
 
 
 model = tf.keras.Model()
@@ -1156,14 +1429,12 @@ else:
 print(model.summary())
 
 
-
 # 定义结果打印函数
 class PrintDot(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs):
         if epoch % 10 == 0:
             print('已经训练完'+ str(epoch) +'Epoch')
             print('.', end='')
-
 
 
 #if  pg.find_graphviz() is not None:
@@ -1184,8 +1455,7 @@ if plot_modelnet == True:
 
 
 
-
-# ## 日志保存内容设定
+# ## The log storage content is set(日志保存内容设定)
 
 
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -1196,7 +1466,7 @@ if not os.path.exists(log_path):
 my_log_dir = os.path.join(log_path,model_type.lower())
 print("my_log_dir:",my_log_dir)
 if not os.path.exists(my_log_dir):
-    os.mkdir(my_log_dir)
+    os.makedirs(my_log_dir)
 
 str_name = model_name.split(".h5")[0]
 # log_name = str_name + "-{}".format(int(time.time()))
@@ -1210,10 +1480,11 @@ if not os.path.exists(curve_reconstract_logs_child_dir):
 
 
 
+# # Model training and testing(模型训练与测试)
 
-# # 模型训练与测试
 
-# ## 模型训练与验证
+# ## Model training and validation（模型训练与验证）
+
 
 # fit函数解析 
 # ```
@@ -1221,6 +1492,7 @@ if not os.path.exists(curve_reconstract_logs_child_dir):
 # validation_split=0.0, validation_data=None, shuffle=True, 
 # class_weight=None, sample_weight=None, initial_epoch=0)
 # ```
+
 
 # * x：输入数据。如果模型只有一个输入，那么x的类型是numpy array，如果模型有多个输入，那么x的类型应当为list，list的元素是对应于各个输入的numpy array  
 # * y：标签，numpy array  
@@ -1253,7 +1525,7 @@ if learning_rate_deacy_policy == 1:
     ]
 elif learning_rate_deacy_policy == 2:
     reduce_lr = [
-        ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience = 10,verbose=2, mode='auto'),
+        ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience = 5,verbose=2, mode='auto'),
         # PrintDot(),  5
     ]
         
@@ -1266,7 +1538,6 @@ else:
 # 原文链接：https://blog.csdn.net/zzc15806/article/details/79711114
 
 
-
 my_callbacks = [
     tf.keras.callbacks.TensorBoard(log_dir =  curve_reconstract_logs_child_dir),
     tf.keras.callbacks.ModelCheckpoint(model_file,save_best_only=True),
@@ -1277,9 +1548,7 @@ my_callbacks = [
 # tensorboard = TensorBoard(log_dir = my_log_dir + '\{}'.format(log_name))
 
 
-
 # My_X.shape,My_Y.shape
-
 
 
 if model_stage == "train":
@@ -1290,7 +1559,7 @@ if model_stage == "train":
         My_Test_X = test_X
         My_Test_Y = test_Y
         My_Weight =  train_weight #
-        My_class_Weight =  class_weight# 'auto' # {"0":}
+        My_class_Weight =  None# 'auto' # {"0":}
     else:
         print("flag:",flag)
         My_X = trainX # trainX, dataX
@@ -1298,7 +1567,7 @@ if model_stage == "train":
         My_Test_X = testX
         My_Test_Y = testY
         My_Weight = train_weight  # train_weight ,weight_matrix
-        My_class_Weight = class_weight # 'auto'
+        My_class_Weight = None # 'auto'
         # history = model.fit(train_X, train_Y, batch_size=BATCH_SIZE,epochs=EPOCHS,
         #                validation_split = 0.1, verbose=1,callbacks=[PrintDot()])
     #     dataset = tf.data.Dataset.from_tensor_slices((train_X, train_Y))
@@ -1310,9 +1579,9 @@ if model_stage == "train":
 
     if batch_size_strategy == True:
         if save_logs == False:
-            history = model.fit(My_X, My_Y, batch_size = BATCH_SIZE,epochs=EPOCHS,validation_data = (My_Test_X,My_Test_Y),class_weight = My_class_Weight, verbose=1,callbacks=reduce_lr)
+            history = model.fit(My_X, My_Y, batch_size = BATCH_SIZE,epochs=EPOCHS,validation_data = (My_Test_X,My_Test_Y), verbose=1,callbacks=reduce_lr)
         else:
-            history = model.fit(My_X, My_Y, batch_size = BATCH_SIZE,epochs=EPOCHS,validation_data = (My_Test_X,My_Test_Y),class_weight = My_class_Weight, verbose=1,callbacks=my_callbacks)
+            history = model.fit(My_X, My_Y, batch_size = BATCH_SIZE,epochs=EPOCHS,validation_data = (My_Test_X,My_Test_Y), verbose=1,callbacks=my_callbacks)
     else:
         if save_logs == False:
             history = model.fit(My_X, My_Y, epochs = EPOCHS,validation_data = (My_Test_X,My_Test_Y), class_weight = My_class_Weight, verbose=1,callbacks = reduce_lr)
@@ -1322,7 +1591,8 @@ else:
     print("model_stage:", model_stage)
 
 
-# ## 模型测试
+# ## Model testing(模型测试)
+
 
 # model.evaluate输入数据(data)和金标准(label),然后将预测结果与金标准相比较,得到两者误差并输出.  
 # model.predict输入数据(data),输出预测结果  
@@ -1342,7 +1612,7 @@ def plot_history(history,model_training_img_file_saving_path,model_training_img_
     plt.plot(hist['epoch'], hist['val_loss'],label = 'Val Error')
     # plt.ylim([0,5])
     plt.legend()
-    plt.savefig(os.path.join(model_training_img_file_saving_path , model_training_img_name + '_MAE.png'), dpi=96,  bbox_inches='tight')
+    plt.savefig(model_training_img_file_saving_path + model_training_img_name + '_MAE.png', dpi=300,  bbox_inches='tight')
 
     plt.figure()
     plt.ylim(0,1.05)
@@ -1354,11 +1624,10 @@ def plot_history(history,model_training_img_file_saving_path,model_training_img_
     # plt.ylim([0,20])
     plt.legend()
     
-    plt.savefig(os.path.join(model_training_img_file_saving_path , model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
-        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS) + '_loss.png'), dpi=96,  bbox_inches='tight')
-    # plt.show()
+    plt.savefig(model_training_img_file_saving_path + model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
+        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS) + '_loss.png', dpi=300,  bbox_inches='tight')
+    plt.show()
     
-
 
 
 if model_stage == "train":
@@ -1366,7 +1635,6 @@ if model_stage == "train":
     hist['epoch'] = history.epoch
     print(hist.tail())
     plot_history(history,model_training_img_file_saving_path,model_training_img_name)
-
 
 
 if model_stage == "train":
@@ -1379,9 +1647,7 @@ if model_stage == "train":
     hist.to_csv(csv_file_saving_path + train_loss_csv_name,mode='w',float_format='%.6f',index=None,header=True)
 
 
-
 hist
-
 
 
 if model_stage == "train":
@@ -1389,16 +1655,14 @@ if model_stage == "train":
     hist.to_csv(model_save_path + train_loss_csv,mode='w',float_format='%.4f',index=None,header=True)
 
 
-
 print(model_name.split('.h5')[0])
 
 
-# ## 混淆矩阵
+# ## Confused Matrix(混淆矩阵)
 
 
 from sklearn.metrics import confusion_matrix
 from classification_utilities import display_cm, display_adj_cm
-
 
 
 if model_stage == "train":
@@ -1412,10 +1676,11 @@ if model_stage == "train":
 #    A_Y_predict = model.predict(testALL_A_X)
 
 
+# predictions
+
 
 np.argmax([0.00000033, 0.00944981, 0.97227716, 0.00000005, 0.01238397,
         0.00106168])
-
 
 
 # 待修改
@@ -1437,18 +1702,20 @@ def count_facies(max_predictions_out,facies_labels):
 
 
 
+
+
 if model_stage == "train":
     conf = confusion_matrix(max_test, max_predictions)
     display_cm(conf, facies_labels_use, hide_zeros=True)
     plt.figure(figsize=(10,10))
+    plt.rc('font',family='Simsun')
     sns.heatmap(conf, xticklabels=facies_labels_use, yticklabels=facies_labels_use, annot=True, fmt="d", annot_kws={"size": 20});
     plt.title("Confusion matrix", fontsize=20)
     plt.ylabel('True label', fontsize=20)
     plt.xlabel('Predicted label', fontsize=20)
-    plt.savefig(os.path.join(model_training_img_file_saving_path , model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
-        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS) + '_confusion_matrix.png'), dpi=96,  bbox_inches='tight')
-    # plt.show()
-
+    plt.savefig(model_training_img_file_saving_path + model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
+        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS) + '_confusion_matrix.png', dpi=300,  bbox_inches='tight')
+    plt.show()
 
 
 def accuracy(conf):
@@ -1470,7 +1737,6 @@ def accuracy_adjacent(conf, adjacent_facies):
     return total_correct / sum(sum(conf)) + 1e-8
 
 
-
 def per_class_accuracy(conf):
     per_class_correct = 0.
     nb_classes = conf.shape[0]
@@ -1480,18 +1746,15 @@ def per_class_accuracy(conf):
         per_class_correct = conf[i][i]
         per_class_sum = 0
         per_class_sum = per_class_sum + sum(conf[i])
-        # print(per_class_sum)
+        print(per_class_sum)
         acc = per_class_correct/per_class_sum + 1e-8
 #         acc = per_class_correct/sum(sum(conf))
         per_acc.append(acc)
     return per_acc
 
 
-
 if model_stage == "train":
     print(conf)
-
-
 
 
 
@@ -1505,15 +1768,13 @@ if model_stage == "train":
         print(i,' class facies classification accuracy = %f' % per_class_accuracy_list[i])
 
 
-# ## 绘制ROC
+# ## Plot ROC(绘制ROC)
 
 
 from sklearn.metrics import roc_curve, auc
 
 
-
 n_classes = len(facies_labels_use)
-
 
 
 # Compute ROC curve and ROC area for each class
@@ -1529,11 +1790,9 @@ if model_stage == "train":
         #计算ROC曲线下方的面积，fpr假正例率数组(横坐标)，tpr真正例率数组(纵坐标） 
 
 
-
 if model_stage == "train":
     fpr["micro"], tpr["micro"], _ = roc_curve(My_Test_Y.ravel(), predictions.ravel())   #ravel函数将矩阵展开成向量
     roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
-
 
 
 # https://blog.csdn.net/cymy001/article/details/79613787
@@ -1556,10 +1815,8 @@ if model_stage == "train":
     roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
 
 
-
 if model_stage == "train":
     print(roc_auc)
-
 
 
 # Plot all ROC curves
@@ -1585,15 +1842,12 @@ if model_stage == "train":
     plt.ylabel('True Positive Rate')
     plt.title('Some extension of Receiver operating characteristic to multi-class')
     plt.legend(loc="lower right")
-    plt.savefig(os.path.join(model_training_img_file_saving_path , model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
-        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS) + '_ROC.png'), dpi=300,  bbox_inches='tight')
-    # plt.show()
-
+    plt.savefig(model_training_img_file_saving_path + model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
+        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS) + '_ROC.png', dpi=330,  bbox_inches='tight')
+    plt.show()
 
 
 import codecs,json
-
-
 
 
 
@@ -1626,7 +1880,7 @@ if model_stage == "train":
     
 
 
-# ## 和真实岩相对比
+# ## Compare prediction label with real label(和真实岩相对比)
 
 
 def make_facies_log_plot_3(logs,sample_index, facies_colors):
@@ -1684,12 +1938,9 @@ def make_facies_log_plot_3(logs,sample_index, facies_colors):
     f.suptitle("岩相分析", fontsize=14,y=0.94)
 
 
-
 if model_stage == "train":
     Val_GT = pd.DataFrame(max_test, columns=["Facies"], index= np.arange(len(max_test)))
     Val_Pred = pd.DataFrame(max_predictions, columns=["Prediction"],index= np.arange(len(max_test)))
-
-
 
 
 
@@ -1700,18 +1951,17 @@ if model_stage == "train":
     print(pred_data)
 
 
-
 if model_stage == "train":
     sample_index = np.arange(len(max_test))
     make_facies_log_plot_3(pred_data,sample_index,facies_colors_use)
     
-    plt.savefig(os.path.join(model_training_img_file_saving_path , model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
-        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_predError_Distribution.png'), dpi=96,  bbox_inches='tight')
-    # plt.show()
+    plt.savefig(model_training_img_file_saving_path + model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
+        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_predError_Distribution.png', dpi=96,  bbox_inches='tight')
+    plt.show()
     # print('Test RMSE: %.3f' % rmse)
 
 
-# # 模型保存
+# # Model Save(模型保存)
 
 
 if model_stage == "train":
@@ -1727,7 +1977,6 @@ if model_stage == "train":
         # exit()
 
 
-
 if model_stage == "train":
     json_config = model.to_json()
     with open(model_json, 'w') as json_file:
@@ -1739,9 +1988,10 @@ else:
     print("Testing...")
 
 
-# # 对预测结果后处理
+# # Post-processing of the prediction results(对预测结果后处理)
 
-# ## 将预测的概率矩阵转化为实际的标签
+
+# ## Convert the predicted probability matrix to actual labels(将预测的概率矩阵转化为实际的标签)
 
 
 if model_stage == "train":
@@ -1751,17 +2001,13 @@ else:
     A_Y_predict = model.predict(testALL_A_X)
 
 
-
 A_Y_predict_class = np.argmax(A_Y_predict, axis=1)
-
 
 
 A_Y_predict
 
 
-
 class_begin
-
 
 
 if class_begin == 1:
@@ -1770,12 +2016,11 @@ else:
     testALL_Y_predict_final = A_Y_predict_class
 
 
-
 if model_stage == "train":
     print("testALL_Y_predict_final.shape:",testALL_Y_predict_final.shape)
 
 
-# ## 预测曲线可视化
+# ## Visualization of prediction curves（预测曲线可视化）
 
 
 if model_stage == "test":
@@ -1786,47 +2031,44 @@ if model_stage == "test":
             fianl_DEPTH = A_read.loc[:,["DEPTH"]][seq_length:].reset_index(drop=True)
 
 
-
 if model_stage == "test":
-    fianl_DEPTH
-
+    print(fianl_DEPTH)
 
 
 pred_facies = pd.DataFrame(testALL_Y_predict_final,columns=["Prediction"])
 pred_facies
 
 
-
-inputX
-
+# A_read
 
 
 if model_stage == "train":
     if (flag == 1) or (flag == 2):
-        df_pred_data = pd.concat([inputX,pred_facies,inputY],axis=1) 
+        df_pred_data = pd.concat([inputX,pred_facies,inputY],axis=0) 
     else:
-        input_AB_X = inputX[seq_length:].reset_index(drop = True)
-        input_AB_Y = inputY[seq_length:].reset_index(drop = True)
-        df_pred_data = pd.concat([input_AB_X,pred_facies,input_AB_Y],axis=1)
+        AB_useful_data = AB_use
+        input_AB_X = AB_useful_data[seq_length:].reset_index(drop = True)
+        input_AB_Y = AB_useful_data[seq_length:].reset_index(drop = True)
+        df_pred_data = pd.concat([input_AB_X,pred_facies,input_AB_Y],axis=0)
 else:
     if (flag == 1) or (flag == 2):
-        df_pred_data = pd.concat([fianl_DEPTH,inputX,pred_facies],axis=1) 
+        df_pred_data = pd.concat([A_read,pred_facies],axis=0) 
     else:
-        input_AB_X = inputX[seq_length:].reset_index(drop = True)
-        df_pred_data = pd.concat([fianl_DEPTH,input_AB_X,pred_facies],axis=1)
-
+        input_AB_X = A_read[seq_length:].reset_index(drop = True)
+        df_pred_data = pd.concat([input_AB_X,pred_facies],axis=1)
+        print('test')
 
 
 df_pred_data
 
 
-# # 训练预测阶段的验证操作到此程序结束
+# # # The validation operation of the training phase ends with this program（训练阶段的验证操作到此程序结束）
 
-# # 总评价模块
+
+# # Total Evaluation Module（总评价模块）
 
 
 # input_AB_Y
-
 
 
 add_flag = 0
@@ -1850,9 +2092,7 @@ else:
         print(add_flag)
 
 
-
 # max(High_R_ALL)
-
 
 
 facies_colors = ['#632423', '#0070C0','#00B0F0','#75DAFF','#00B050','#FFC000', '#FFFF00']
@@ -1867,6 +2107,7 @@ facies_labels = ['高有机质层状页岩相', '高有机质纹层状页岩相'
 # facies_colors = ['#00B0F0','#75DAFF','#00B050','#FFC000', '#FFFF00','#007F00']
 
 # facies_labels = ['泥质粉砂岩', '层状粘土质页岩','纹层状粘土质页岩','层状长英质页岩','纹层状长英质页岩','灰岩、云岩']
+
 
 
 
@@ -1887,7 +2128,7 @@ facies_labels = ['高有机质层状页岩相', '高有机质纹层状页岩相'
 facies_labels
 
 
-# ## 准确性评估
+# ## Accuracy assessment（准确性评估）
 
 
 # facies_colors = ['#632423','#007F00', '#999999','#339966','#99CC00','#00FF00','#7F7F7F','#FFCC99','#FFCC00','#993366','#FF9900', '#FF6600','#00CCFF']
@@ -1900,9 +2141,9 @@ facies_labels
 
 
 
+
 if (flag==1 or flag ==2) and (add_flag == 1):
         High_R_Label = High_R.copy()
-
 
 
 if add_flag ==1 or add_flag ==2:
@@ -1910,7 +2151,6 @@ if add_flag ==1 or add_flag ==2:
         High_R_Label = High_R.copy()
     else:
         High_R_Label = High_R[seq_length:].reset_index(drop=True)
-
 
 
 if (add_flag == 1) or (add_flag ==2):
@@ -1925,11 +2165,14 @@ if (add_flag == 1) or (add_flag ==2):
         exit()
 
 
-# ## 绘制曲线岩相图
+
+# ## Draw a curvilinear petrographic map（绘制曲线岩相图）
 
 
 if model_stage == "train":
     use_depth_log = False
+
+
 
 
 
@@ -1999,14 +2242,12 @@ def make_facies_log_plot_4(logs,sample_index, facies_colors):
         pred_image_save_path = model_testing_img_file_saving_path 
         pred_image_name = model_testing_image_name
     print(pred_image_save_path)
-    plt.savefig(os.path.join(pred_image_save_path, pred_image_name  + '_PredictionAll.png'), dpi=300,  bbox_inches='tight')
-
+    plt.savefig(os.path.join(pred_image_save_path, pred_image_name  + '_PredictionAll.png'), dpi=96,  bbox_inches='tight')
 
 
 # ztop = df_pred_data[DEPTH_col_name].min(); zbot = df_pred_data[DEPTH_col_name].max()
 # math.floor(ztop), math.ceil(zbot)
 len(pred_facies),len(testALL_Y_predict_final),testALL_Y_predict_final.shape,pred_facies.shape
-
 
 
 samples_index = np.arange(len(testALL_Y_predict_final))
@@ -2021,11 +2262,11 @@ else:
         make_facies_log_plot_2(df_pred_data,samples_index,facies_colors_use)
 
 
-
 # make_facies_log_plot_4(df_pred_data,samples_index,facies_colors_use)
 
 
-# ## 绘制混淆矩阵
+# ## Plot confused matrix（绘制混淆矩阵）
+
 
 # 绘制混淆矩阵，预测结果与真实标定对比
 
@@ -2036,29 +2277,14 @@ else:
 #     testALL_Y_predict_final = testALL_Y_predict_final
 
 
-
 # len(High_R_Label),len(testALL_Y_predict_final),class_begin
 
 
 
-if (add_flag == 1):
-    cv_conf = confusion_matrix(High_R_Label, testALL_Y_predict_final)
-    display_cm(cv_conf, facies_labels_use, hide_zeros=True)
-    plt.figure(figsize=(15,15))
-    sns.heatmap(cv_conf, xticklabels=facies_labels_use, yticklabels=facies_labels_use, annot=True, fmt="d", annot_kws={"size": 20});
-    plt.title("Confusion matrix", fontsize=20)
-    plt.ylabel('True label', fontsize=20)
-    plt.xlabel('Predicted label', fontsize=20)
-    plt.savefig(model_training_img_file_saving_path + model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
-            learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS) + '_all_confusion_matrix.png', dpi=96,  bbox_inches='tight')
-    # plt.show()
 
 
+# ### Whether or not to perform lithofacies merging（是否执行岩相合并）
 
-
-
-
-# ### 是否执行岩相合并
 
 # facies_colors = ['#632423', '#0070C0','#00B0F0','#75DAFF','#00B050','#FFC000', '#FFFF00']
 # 
@@ -2072,16 +2298,13 @@ merge_list = {2: 4, 3: 4, 5: 4}
 # merge_list = {13:13, 8: 12, 11: 12, 9: 10, 7:10,3:6 ,5:6, 2:4, 1:1}
 
 
-
 for i in merge_list:
     print(type(i),type(merge_list[i]))
     replace_str = str(i)
     
 
 
-
 # np.unique(df_pred_data['Facies'])
-
 
 
 execute_merge_label = False   # False  | True
@@ -2111,13 +2334,10 @@ if (add_flag ==2 and execute_merge_label == True):
    
 
 
-
 # np.unique(pred_facies),np.unique(High_R_Label)
 
 
-
 add_flag
-
 
 
 def make_facies_log_plot_5(logs,sample_index, facies_colors):
@@ -2188,7 +2408,6 @@ def make_facies_log_plot_5(logs,sample_index, facies_colors):
     plt.savefig(os.path.join(pred_image_save_path, pred_image_name  + '_Merger_PredictionAll.png'), dpi=96,  bbox_inches='tight')
 
 
-
 if (add_flag ==2 and execute_merge_label == True):
     if (flag == 1) or (flag == 2):
         df_pred_data = pd.concat([fianl_DEPTH,inputX,pred_facies],axis=1) 
@@ -2202,16 +2421,13 @@ if (add_flag ==2 and execute_merge_label == True):
         
 
 
-
 if (add_flag ==2 and execute_merge_label == True):
     make_facies_log_plot_5(df_pred_data,samples_index,facies_colors)
-
 
 
 if add_flag ==2:
     cv_conf = confusion_matrix(High_R_Label, pred_facies)
     print(cv_conf)
-
 
 
 if add_flag ==2:
@@ -2225,7 +2441,6 @@ if add_flag ==2:
     print(new_facies_labels)
 
 
-
 if add_flag ==2:
     cv_conf = confusion_matrix(High_R_Label, pred_facies)
     display_cm(cv_conf, new_facies_labels, hide_zeros=True)
@@ -2236,13 +2451,10 @@ if add_flag ==2:
     plt.xlabel('Predicted label', fontsize=20)
     # plt.savefig(os.path.join(model_testing_img_file_saving_path,model_testing_image_name  + '_all_confusion_matrix.png'), dpi=96,  bbox_inches='tight')
 #     plt.savefig(str(model_testing_img_file_saving_path + "/" + model_testing_image_name  + '_all_confusion_matrix.png'), dpi=96,  bbox_inches='tight')
-    # plt.show()
-
+    plt.show()
 
 
 # conf,cv_conf
-
-
 
 
 
@@ -2252,20 +2464,20 @@ if (add_flag == 1) or (add_flag ==2):
     print('Facies classification accuracy = %f' % accuracy(cv_conf))
 #     print('Adjacent facies classification accuracy = %f' % accuracy_adjacent(cv_conf, adjacent_facies))
 
+
 if (add_flag == 1) or (add_flag ==2):
     per_class_accuracy_list = per_class_accuracy(cv_conf)
     for i in range(len(per_class_accuracy_list)):
         print(i,' class facies classification accuracy = %f' % per_class_accuracy_list[i])
 
 
-# ## 预测值与真实标定值ROC
+# ## Predicted vs. true calibration ROC（预测值与真实标定值ROC）
 
 
 if (model_stage == "train") :
     pred_X = dataX
 else:
     pred_X = testALL_A_X
-
 
 
 if (add_flag == 1) or (add_flag ==2):
@@ -2283,11 +2495,9 @@ if (add_flag == 1) or (add_flag ==2):
         #计算ROC曲线下方的面积，fpr假正例率数组(横坐标)，tpr真正例率数组(纵坐标） 
 
 
-
 if (add_flag == 1) or (add_flag ==2):
     fpr["micro"], tpr["micro"], _ = roc_curve(all_y.ravel(), A_Y_predict.ravel())   #ravel函数将矩阵展开成向量
     roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
-
 
 
 if (add_flag == 1) or (add_flag ==2):
@@ -2306,7 +2516,6 @@ if (add_flag == 1) or (add_flag ==2):
     fpr["macro"] = all_fpr
     tpr["macro"] = mean_tpr
     roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
-
 
 
 if (add_flag == 1) or (add_flag ==2):
@@ -2335,39 +2544,35 @@ if (add_flag == 1) or (add_flag ==2):
             learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS) + '_all_ROC.png'), dpi=330,  bbox_inches='tight')
     else:
         plt.savefig(os.path.join(model_testing_img_file_saving_path, model_testing_image_name + '_all_ROC.png'), dpi=330,  bbox_inches='tight')
-    # plt.show()
+    plt.show()
 
 
 
 
 
+# # The curve results are saved（曲线结果保存）
 
-# # 曲线结果保存
 
-# ## 结果文件文件头信息
+# ## Result file header information（结果文件文件头信息）
 
 
 # filename_A ： 'HP1_orginLog_6D_4075m-4280m_R_0.125.csv'
 well_name
 
 
-
 if use_depth_log == True:
     print("begin_depth,end_depth:",begin_depth,end_depth)
-
 
 
 resolution_ratio = 1 / resolution
 resolution_ratio
 
 
-# ## 查看保存的结果曲线
+# ## View the saved result curves（查看保存的结果曲线）
 
 
 if (add_flag == 1) or (add_flag ==2):
     print(df_pred_data.shape,DEPTH_AddReslution.shape,well_name)
-
-
 
 
 
@@ -2403,6 +2608,11 @@ pd_data.to_csv(csv_file_saving_path + result_csv_name,mode='w',float_format='%.4
 print("Prediction Algorithm is Finished!!")
 
 
+result_csv_name
+
+
+pd_data
+
 
 if paly_music == True:
     mixer.init()
@@ -2414,6 +2624,8 @@ if paly_music == True:
     time.sleep(6)
     mixer.music.stop()
         # exit()
+
+
 
 
 

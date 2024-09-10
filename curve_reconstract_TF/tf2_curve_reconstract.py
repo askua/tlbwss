@@ -1,25 +1,41 @@
 # -*- coding:utf-8 -*-
-# # 导入依赖包
-
-# ## 导入第三方包
+# # Import packages（导入包）
 
 
+# ## Import third-party packages（导入第三方包）
+
+
+import os
 import pandas as pd
+import numpy as np
 import tensorflow as tf
 #import keras
+import time
+import math
 import seaborn as sns
 import statsmodels.api as sm
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import tensorflow.keras.backend as Kbackend
 
 # pydot_ng 用于绘制网络图
+import pydot_ng as pg
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 # from sklearn.model_selection import train_test_split
 from sklearn import model_selection
+from sklearn.preprocessing import scale
 from sklearn.metrics import mean_absolute_error
 from pandas import set_option
 # from tensorflow import keras
+from tensorflow.keras import layers
+from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.callbacks import LearningRateScheduler
 from tensorflow.keras.callbacks import ReduceLROnPlateau
 from pylab import *
+from scipy import interpolate
+from pygame import mixer 
+
 
 # calculate RMSE
 from sklearn.metrics import mean_squared_error
@@ -27,18 +43,18 @@ from sklearn.metrics import mean_squared_error
 # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html#sklearn.metrics.mean_squared_error
 
 
-
+print(tf.__version__)
 
 
 # numpy+mkl 版本为17.2  以上
-# tensorboard，tensorflow 版本为2.1.0  
+# tensorboard，tensorflow 版本为2.4.0
 # pydot版本为1.4.1, graphviz 版本为0.13.2
 
 
-# ## 导入自己的包
+# ## Import our own package（导入自己的包）
 
 
-from lithofacies_classification_TF import senutil as sen
+import senutil as sen
 # from rbflayer import RBFLayer, InitCentersRandom
 import senmodels as sms
 
@@ -55,99 +71,113 @@ np.set_printoptions(suppress=True, threshold=5000)
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 
 
-# # 准备工作（数据处理，结果保存位置定义）
-print("tensorflow version:",tf.__version__)
-
-# ## 定义数据集所在位置
+# # Dataset preparation work（数据集准备工作）
 
 
-# ### 训练集所在位置
-# ## 设定是训练操作还是测试操作
+# # Define the location of the dataset（定义数据集所在位置）
 
 
-# 模型有两种阶段：  "train"(训练) | "test"(测试)
+# ### Location of training set（训练集所在位置）
 
 
-model_stage = "train"
-# model_stage = "test"
+layer_name = 'QT'   # QSK | QT
 
-layer_name = '青山口组'   # 青山口组 | 泉头组
-# layer_name = '泉头组' 
 
 # data/exp_curve_reconstract/exp_1/train/
-experiment_id = "exp_6"
-TrainDataPath = 'data/exp_curve_reconstract/' + experiment_id + '/train/'
-# filename_AB:  
-# (1) 古页1_R_ 0.1250m_青山口组_2107m-2587m.csv;   
-# (2) 古页1_R_ 0.1250m_泉头组_2587m-2744m.csv;   
-# (3)古页1_R_0.1250m_青山口组_2107m-2587m_针对_朝21井_R_ 0.1250m_青山口组_1260m-1668m-修正深度_add_sample_weight.csv;  
-# (4)古页1_R_0.1250m_青山口组_2107m-2587m_针对_松页油1_R_0.1250m_青山口组_2105m-2448m-修正深度_add_sample_weight.csv;  
-# (5)古页1_R_ 0.1250m_泉头组_2587m-2744m_针对_朝21井_R_ 0.1250m_泉头组_1668m-1859m_add_sample_weight.csv;      
-# (6)古页1_R_ 0.1250m_泉头组_2587m-2744m_针对_松页油1_R_ 0.1250m_泉头组_2448m-2529m_add_sample_weight.csv;    
-# (7)古页1_R_ 0.1250m_青山口组_2107m-2587m_针对_英斜58_R_ 0.1250m_青山口组_1832.5m-2121.5m_add_sample_weight.csv
-# (8)古页1_R_ 0.1250m_泉头组_2587m-2744m_针对_英斜58_R_ 0.1250m_泉头组_2121.5m-2238.0m_add_sample_weight.csv
 
-# filename_AB = '古页1_R_ 0.1250m_青山口组_2107m-2587m_针对_英斜58_R_ 0.1250m_青山口组_1832.5m-2121.5m_add_sample_weight.csv'
-# filename_AB = '古页1_R_ 0.1250m_泉头组_2587m-2744m_针对_英斜58_R_ 0.1250m_泉头组_2121.5m-2238.0m_add_sample_weight.csv'
-filename_AB = '古页1_R_ 0.1250m_青山口组_2107m-2587m.csv'   # 青山口组；  泉头组
-# filename_AB = '古页1_R_ 0.1250m_泉头组_2587m-2744m.csv'   # 青山口组；  泉头组
+
+TrainDataPath = '../data/exp_curve_reconstract/exp_2/train'
+
+
+# filename_AB:  
+# (1) GY1_R_0.1250m_QSK_2107m-2587m.csv;
+# (2) GY1_R_ 0.1250m_QT_2587m-2744m.csv;
+# (3)GY1_R_0.1250m_QSK_2107m-2587m_for_C21井_R_ 0.1250m_QSK_1260m-1668m-修正深度_add_sample_weight.csv;
+# (4)GY1_R_0.1250m_QSK_2107m-2587m_for_SYY1_R_0.1250m_QSK_2105m-2448m-修正深度_add_sample_weight.csv;
+# (5)GY1_R_ 0.1250m_QT_2587m-2744m_for_C21井_R_ 0.1250m_QT_1668m-1859m_add_sample_weight.csv;
+# (6)GY1_R_ 0.1250m_QT_2587m-2744m_for_SYY1_R_ 0.1250m_QT_2448m-2529m_add_sample_weight.csv;
+
+
+filename_AB = 'GY1_R_ 0.1250m_QT_2587m-2744m_for_SYY1_R_ 0.1250m_QT_2448m-2529m_add_sample_weight.csv'   # QSK；  QT
 TrainDataPath = os.path.join(TrainDataPath,layer_name,filename_AB)
 print(TrainDataPath)
 
 
-# ### 预测阶段测试集所在位置
-TestDataPath = 'data/exp_curve_reconstract/' + experiment_id +'/test/'
-# data/exp_curve_reconstract/exp_1/test/;   data/exp_curve_reconstract/val/
-# filename_A为预测曲线对应的常规曲线数据:  
-# (1) 朝21井_R_ 0.1250m_青山口组_1260m-1668m-修正深度.csv    
-# (2) 松页油1_R_ 0.1250m_青山口组_2105m-2448m-修正深度.csv  
-# (3) 朝21井_R_ 0.1250m_泉头组_1668m-1859m.csv  
-# (4) 松页油1_R_ 0.1250m_泉头组_2448m-2529m.csv  
-# 齐平1井_R_ 0.1000m_青山口组_1649m-2089m.csv
+# ### Location of the testing set during the prediction phase(预测阶段测试集所在位置)
 
-# filename_A = "松页油1_R_ 0.1250m_青山口组_2105m-2448m-修正深度.csv"
-# filename_A =  '朝21井_R_ 0.1250m_青山口组_1260m-1668m-修正深度.csv' 
-# filename_A = '朝21井_R_ 0.1250m_泉头组_1668m-1859m.csv'
-# filename_A =  '松页油1_R_ 0.1250m_泉头组_2448m-2529m.csv'
-filename_A =  '英斜58_R_ 0.1250m_青山口组_1832.5m-2121.5m.csv' 
-# filename_A =  '英斜58_R_ 0.1250m_泉头组_2121.5m-2238.0m.csv'  
+
+TestDataPath = 'data/exp_curve_reconstract/exp_2/test/'
+
+
+# data/exp_curve_reconstract/exp_1/test/;   data/exp_curve_reconstract/val/
+
+
+# filename_A为预测曲线对应的常规曲线数据:  
+# (1) SYY1_R_ 0.1250m_QSK_2105m-2448m-修正深度.csv
+# (2) C21井_R_ 0.1250m_QSK_1260m-1668m-修正深度.csv
+# (3) C21井_R_ 0.1250m_QT_1668m-1859m.csv
+# (4) SYY1_R_ 0.1250m_QT_2448m-2529m.csv
+# QP1井_R_ 0.1000m_QSK_1649m-2089m.csv
+
+
+filename_A =  'SYY1_R_ 0.1250m_QT_2448m-2529m.csv'
+
 
 addR_well_name = filename_A.split(".")[0]
 TestDataPath = os.path.join(TestDataPath,layer_name,filename_A)
 
-3
-# ### 真实标签数据集所在位置
+
+# ### Location of the real label dataset(真实数据集所在位置)
+
+
 # 用于验证预测结果，实际中可能没有
+
+
 use_high_R_data = True #True # False
 
-# 高分辨率相对于低分辨率的倍数, default value = 10 (对应于0.1m); 8 (对应于0.125m)
+
+# resolution, default value = 10 (对应于0.1m); 8 (对应于0.125m)
 resolution = 8
+
+
 # data/exp_curve_reconstract/exp_1/test/
-HighRDataPath = 'data/exp_curve_reconstract/' + experiment_id +'/test/'
+
+
+
+HighRDataPath = 'data/exp_curve_reconstract/exp_2/test/'
+
+
 # 理论上与filename_A在同一处，标签文件
 
 
-# 朝21井_R_ 0.1250m_青山口组_1260m-1668m-修正深度.csv
-# 松页油1_R_0.1250m_青山口组_2105m-2448m-修正深度.csv
+# C21井_R_ 0.1250m_QSK_1260m-1668m-修正深度.csv
+# SYY1_R_0.1250m_QSK_2105m-2448m-修正深度.csv
 
-# filename_C_H = '朝21井_R_ 0.1250m_泉头组_1668m-1859m.csv' 
+# filename_C_H = 'C21井_R_ 0.1250m_QT_1668m-1859m.csv'
 filename_C_H = filename_A
+
 
 HighRDataPath = os.path.join(HighRDataPath,layer_name,filename_C_H)
 
 
-# # 模型定义
-# ## 定义自变量
+# # Model Definition（模型定义）
+
+
+# ## Define independent variables（定义自变量）
+
+
 # 定义要输入的维度AC、CNL、DEN、GR、RD、RS等
+
+
 input_vectors = ["DT","CNL","DEN","GR","RD","RS"]
 # input_vectors = ["AC","CNL","DEN","GR","RLLD","RLLS"]
 # input_vectors = ["AC","DEN","GR","RD","RS"]
 
 
-# ## 定义因变量
-# 定义要训练的参数模型
-# 读取元素曲线训练数据，包括"Al","Ca","Fe","K","Mg","Na","Si"等元素曲线  
-# element_name = |"Al"|"Ca"|"Fe"|"K"|"Mg"|"Na"|"Si"|   
+# ## Define dependent variable（定义因变量）
+
+
+# Define the parameter model to be trained, such as DTXX
 
 
 # 定义要目标曲线PERM、POR、SW
@@ -167,9 +197,8 @@ reference_name = "DTXX"
 # 样本权重
 weight_coloum = "sample_weight"
 
-# 训练模型是否使用权重
-train_use_weight = False
-# ## 选择要使用的模型
+
+# ## Select the model to be used（选择要使用的模型）
 
 
 # 择要使用的模型类型model_type:  
@@ -185,10 +214,10 @@ train_use_weight = False
 # model_type = 'MyWaveNet' 
 # model_type = 'BiLSTM-Atten5'
 # model_type = 'CNN_Atten'   Double_Expert_Net
-model_type = 'Bigru_Multihead_Self_Atten_DNN'  # (1) MyWaveNet;  (4)BiLSTM-Atten5; (6) BiGRU-Atten2;
+model_type = 'Double_Expert_Net'  # (1) MyWaveNet;  (4)BiLSTM-Atten5; (6) BiGRU-Atten2;
 
 
-# ## 设置和模型相关的参数
+# ## Set and model related parameters(设置和模型相关的参数)
 
 
 flag = 0
@@ -201,7 +230,7 @@ else:
     flag = 3
 
 
-# ## 初始化训练模型结构参数
+# ## Initialize the training model structure parameters(初始化训练模型结构参数)
 
 
 # 网络结构参数来自与senmodels模块
@@ -218,7 +247,7 @@ n_layers = 3 # LSTM layer 层数 default 4
 dropout_rate = 0.4   # 在训练过程中设置 default 0.2  ,Na,0.4
 
 # 修改下面的参数不改变网络
-learning_rate = 0.002  # default 0.01, 优选：0.005 ；0.008 可用0.0008 0.0005 0.001
+learning_rate = 0.005  # default 0.01, 优选：0.005 ；0.008 可用0.0008 0.0005 0.001
 # batch_size = 100 Na:
 BATCH_SIZE = 640
 # iterations = 300
@@ -235,6 +264,20 @@ model_para = sms.MyModelParameter(data_dim,seq_length, hidden_dim, output_dim,le
 model_para.n_layers
 
 
+# ## Is the setting a training operation or a testing operation(设定是训练操作还是测试操作)
+
+
+# 模型有两种阶段：  "train"(训练) | "test"(测试)
+
+
+model_stage = "train"
+model_stage = "test"
+
+
+# 训练模型是否使用权重
+
+
+train_use_weight = True
 
 
 if model_stage == "train":
@@ -257,6 +300,11 @@ save_logs = False #True
 # 训练日志保存位置
 log_path = os.path.join("curve_reconstract_logs/")
 
+if os.path.exists(log_path):
+    pass
+else:
+    os.makedirs(log_path)
+
 
 # 是否使用batch_size_strategy default False , | True
 batch_size_strategy = False
@@ -275,7 +323,7 @@ learning_rate_deacy_policy = 2
 plot_modelnet = True
 
 
-# ## 训练阶段模型保存位置
+# ## Location for saving the model during the training phase(训练阶段模型保存位置)
 
 
 print(model_stage)
@@ -288,14 +336,14 @@ custom_model_child_dir = "J404_Seq_8_WaveNet/"
 
 if train_use_weight == False:
     # 设置模型保存的文件夹
-    model_save_path = os.path.join("curve_reconstract_model/", experiment_id, layer_name + '_nosampleweight_' + model_type.lower() + "_train/")
+    model_save_path = os.path.join("curve_reconstract_model/", layer_name + '_nosampleweight_' + model_type.lower() + "_train/")
 else:
-    model_save_path = os.path.join("curve_reconstract_model/", experiment_id, layer_name +  '_sampleweight_' + model_type.lower() + "_train/")
+    model_save_path = os.path.join("curve_reconstract_model/", layer_name +  '_sampleweight_' + model_type.lower() + "_train/")
 #model_save_path = os.path.join("model/", 'element_' + model_type.lower() + "_train/",child_dir_name)
 if os.path.exists(model_save_path):
     model_path = model_save_path
 else:
-    os.mkdir(model_save_path)
+    os.makedirs(model_save_path)
     model_path = model_save_path
 print(model_path)
 
@@ -314,7 +362,7 @@ model_json = model_path + json_name
 print(model_json)
 
 
-# ## 测试操作加载模型存放位置
+# ## Test operation loading model storage location（测试操作加载模型存放位置)
 
 
 if model_stage == "test":   
@@ -333,7 +381,7 @@ if model_stage == "test":
 
 
 
-# ## 定义算法结果图表文字保存位置
+# ## Define the location for saving algorithm results, charts, and text（定义算法结果图表文字保存位置）
 
 
 if model_stage == "train":
@@ -342,10 +390,9 @@ if model_stage == "train":
     # end_depth = depth_log[-1][0]
     
     training_img_file_saving_path = 'curve_reconstract_model_training_images/'
-    if not os.path.exists(os.path.join(training_img_file_saving_path,child_dir_name)):
-        os.mkdir(os.path.join(training_img_file_saving_path,child_dir_name))
-    model_training_img_file_saving_path = os.path.join(training_img_file_saving_path, child_dir_name, experiment_id)
+    model_training_img_file_saving_path = os.path.join(training_img_file_saving_path,child_dir_name)
     model_training_img_name =  layer_name + "_" + model_type + "_" + well_name + "_"+ element_name
+    
     if not os.path.exists(model_training_img_file_saving_path):
         os.mkdir(model_training_img_file_saving_path)
 
@@ -353,10 +400,7 @@ if model_stage == "train":
 if model_stage == "test": 
      
     model_testing_image_name =  layer_name + "_" + model_type + "_" + well_name + "_" + element_name
-    testing_img_file_saving_path = 'curve_reconstract_model_testing_images/'
-    model_testing_img_file_saving_path = os.path.join(testing_img_file_saving_path, child_dir_name, experiment_id)
-    if not os.path.exists(os.path.join(testing_img_file_saving_path,child_dir_name)):
-        os.mkdir(os.path.join(testing_img_file_saving_path,child_dir_name))
+    model_testing_img_file_saving_path = 'curve_reconstract_model_testing_images/'
     if not os.path.exists(model_testing_img_file_saving_path):
         os.mkdir(model_testing_img_file_saving_path)
 
@@ -371,19 +415,15 @@ font={'family':'SimHei',
 
 csv_file_saving_path = "curve_reconstract_csv_results/"
 if model_stage == "test": 
-    if not os.path.exists(os.path.join("curve_reconstract_csv_results/", model_type.lower() + "_test/")):
-        os.mkdir(os.path.join("curve_reconstract_csv_results/", model_type.lower() + "_test/"))    
-    csv_file_saving_path = os.path.join("curve_reconstract_csv_results/", model_type.lower() + "_test/", experiment_id)
+    csv_file_saving_path = os.path.join("curve_reconstract_csv_results/", model_type.lower() + "_test/")
 else:
-    if not os.path.exists(os.path.join("curve_reconstract_csv_results/", model_type.lower() + "_train/")):
-        os.mkdir(os.path.join("curve_reconstract_csv_results/", model_type.lower() + "_train/"))    
-    csv_file_saving_path = os.path.join("curve_reconstract_csv_results/", model_type.lower() + "_train/", experiment_id)
+    csv_file_saving_path = os.path.join("curve_reconstract_csv_results/", model_type.lower() + "_train/")
 if not os.path.exists(csv_file_saving_path):
     os.mkdir(csv_file_saving_path)
+print(csv_file_saving_path)
 
 
-
-# # 数据加载及处理
+# ## Data loading and processing（数据加载及处理）
 
 
 # 调用pandas的read_csv()方法时，默认使用C engine作为parser engine，而当文件名中含有中文的时候，用C engine在部分情况下就会出错。所以在调用read_csv()方法时指定engine为Python就可以解决问题了。
@@ -446,10 +486,10 @@ else:
 print("use_depth_log:",use_depth_log)
 
 
-# ## 设置自变量应变量数据
+# ## Set independent variable and dependent variable data（设置自变量应变量数据）
 
 
-# 电阻率曲线取对数值
+# Take logarithmic value of resistivity curve（电阻率曲线取对数值）
 
 
 if model_stage == "train":
@@ -483,7 +523,7 @@ for item in electric_log:
 
 
 
-# ## 归一化操作
+# ## Normalization operations(归一化操作)
 
 
 # 设置输入曲线范围,由于取了对数，所以RD和RS设置下限-1
@@ -491,7 +531,7 @@ AC = [140,350]
 DT = [40,200]
 # AC = [140,300]
 AC = [40,300]
-CNL = [0,70]
+CNL = [-0.8,70]
 DEN = [1,3]
 GR = [0,350]
 RD = [0,5]
@@ -617,13 +657,13 @@ if model_stage == "train":
     plt.ylabel("样本点编号")
     plt.legend(loc='upper right')
     plt.grid(True)
-    plt.savefig(os.path.join(model_training_img_file_saving_path, model_training_img_name +"_" + element_name +  '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
-            learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_tendency.png'), dpi=96,  bbox_inches='tight')
+    plt.savefig(model_training_img_file_saving_path + model_training_img_name +"_" + element_name +  '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
+            learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_tendency.png', dpi=96,  bbox_inches='tight')
 
 if model_stage == "test":
     plt.savefig(model_testing_img_file_saving_path + model_testing_image_name +"_" + element_name  + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
             learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_tendency.png', dpi=96,  bbox_inches='tight')
-# plt.show()
+plt.show()
 
 
 element_flag = element.index(element_name)
@@ -633,21 +673,17 @@ if model_stage == "train":
     plt.scatter(AB_Y_calc_G,AB_Y_G)
     plt.xlabel(reference[element_flag])
     plt.ylabel(element[element_flag])
-    if operate_standard == True:
-        plt.xlim(-0.05,1.05)
-        plt.ylim(-0.05,1.05)
-    else:
-        plt.xlim(-5,305)
-        plt.ylim(-5,305)
+    plt.xlim(-0.05,1.05)
+    plt.ylim(-0.05,1.05)
     #显示网格线"
     plt.grid(True)
-    # plt.show()
-    plt.savefig(os.path.join(model_training_img_file_saving_path, model_training_img_name + 'ValAll1.jpg'), dpi=220,  bbox_inches='tight')
+    plt.show()
+    # plt.savefig(model_testing_img_file_saving_path + model_testing_image_name + 'ValAll.jpg', dpi=220,  bbox_inches='tight')
 
 #     print("You Input a wrong Target Parameter!")
 
 
-# ## 输入自变量数据准备
+# ## Input the independent variables data preparation(输入自变量数据准备)
 
 
 if model_stage == "train":
@@ -659,10 +695,11 @@ AB_X = np.array(AB_G)
 # sample_weight
 
 
-# ### 训练集验证集划分
+# ### Split the training set and the validation set(训练集验证集划分)
 
 
-# 根据模型需要判定是否需要序列化
+# Determine whether serialization is required based on the needs of the model
+# (根据模型需要判定是否需要序列化)
 
 
 if (flag == 1) or (flag == 2):
@@ -719,7 +756,7 @@ else:
 
 
 
-# ### 确认输入维度
+# ### Confirm the input dimension(确认输入维度)
 
 
 if (flag == 1) or (flag == 2):
@@ -745,10 +782,10 @@ else:
 # train_weight
 
 
-# # 网络实例化
+# # Network instantiation(网络实例化)
 
 
-# ## 构建网络或载入模型
+# ## Build a network or load a model(构建网络或载入模型)
 
 
 def model_type_select(model_type):
@@ -800,8 +837,6 @@ def model_type_select(model_type):
         return sms.bilstm_atten_model_6(model_para)
     elif model_type == 'CNN_Atten':
         return sms.wavenet_atten_model(model_para)
-    elif model_type == 'Bigru_Multihead_Self_Atten_DNN':
-        return sms.bigru_multihead_atten_dnn_model(model_para)
     else:
         return sms.bi_lstm_cell_model(model_para)
 
@@ -924,7 +959,7 @@ if model_stage == "test":
 #     return model
 
 
-# ## 模型可视化
+# ## Model visualization(模型可视化)
 
 
 model = tf.keras.Model()
@@ -939,8 +974,7 @@ else:
         # 此处加载模型无需判断 
         model = tf.keras.models.model_from_json(json_config_1,custom_objects={'RBFLayer': sms.RBFLayer,
                                                                               'AttentionLayer':sms.AttentionLayer,
-                                                                              'GlorotUniform':tf.keras.initializers.GlorotUniform,
-                                                                              'huber_loss':tf.keras.losses.Huber
+                                                                              'GlorotUniform':tf.keras.initializers.GlorotUniform
                                                                               })
         model.load_weights(pred_model_file)
 print(model.summary())
@@ -971,14 +1005,14 @@ if plot_modelnet == True:
                dpi=96)
 
 
-# ## 日志保存内容设定
+# ## The log storage content is set(日志保存内容设定)
 
 
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 if not os.path.exists(log_path):
     # 针对第一次训练
-    os.mkdir(log_path)
+    os.makedirs(log_path)
 my_log_dir = os.path.join(log_path,model_type.lower())
 print("my_log_dir:",my_log_dir)
 if not os.path.exists(my_log_dir):
@@ -996,10 +1030,10 @@ if not os.path.exists(curve_reconstract_logs_child_dir):
 
 
 
-# # 模型训练与测试
+# # Model training and testing(模型训练与测试)
 
 
-# ## 模型训练与验证
+# ## Model training and validation（模型训练与验证）
 
 
 # fit函数解析 
@@ -1101,7 +1135,7 @@ else:
     print("model_stage:", model_stage)
 
 
-# ## 模型测试
+# ## Model testing(模型测试)
 
 
 # model.evaluate输入数据(data)和金标准(label),然后将预测结果与金标准相比较,得到两者误差并输出.  
@@ -1122,7 +1156,7 @@ def plot_history(history,model_training_img_file_saving_path,model_training_img_
     plt.plot(hist['epoch'], hist['val_mae'],label = 'Val Error')
     # plt.ylim([0,5])
     plt.legend()
-    plt.savefig(os.path.join(model_training_img_file_saving_path, model_training_img_name + '_MAE.png'), dpi=96,  bbox_inches='tight')
+    plt.savefig(model_training_img_file_saving_path + model_training_img_name + '_MAE.png', dpi=96,  bbox_inches='tight')
 
     plt.figure()
     plt.xlabel('Epoch')
@@ -1134,9 +1168,9 @@ def plot_history(history,model_training_img_file_saving_path,model_training_img_
     # plt.ylim([0,20])
     plt.legend()
     
-    plt.savefig(os.path.join(model_training_img_file_saving_path , model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
-        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS) + '_loss.png'), dpi=96,  bbox_inches='tight')
-    # plt.show()
+    plt.savefig(model_training_img_file_saving_path + model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
+        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS) + '_loss.png', dpi=96,  bbox_inches='tight')
+    plt.show()
     
 
 
@@ -1170,9 +1204,9 @@ if model_stage == "train":
     plt.ylabel("验证样本编号")
     plt.title(element_name + "在验证集上")
     plt.legend(loc='best')
-    plt.savefig(os.path.join(model_training_img_file_saving_path , model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
-        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_val.png'), dpi=96,  bbox_inches='tight')
-    # plt.show()
+    plt.savefig(model_training_img_file_saving_path + model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
+        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_val.png', dpi=96,  bbox_inches='tight')
+    plt.show()
     print("Testing set Mean Abs Error: {:5.5f} ".format(mae))
     print("Testing set Mean Abs Error: {:5.5f} ".format(mse))
 # 对于测试阶段目前暂不计算MSE，等反归一化后计算  
@@ -1180,7 +1214,7 @@ if model_stage == "train":
 #    A_Y_predict = model.predict(testALL_A_X)
 
 
-# ## 验证集预测值与真实标定值线性相关性分析
+# ## Linear correlation analysis between the predicted value of the validation set and the true calibration value（验证集预测值与真实标定值线性相关性分析)
 
 
 if model_stage == "train":
@@ -1208,8 +1242,8 @@ if model_stage == "train":
     print(corr_index)
 
 
-# if model_stage == "train":
-#     float(corr_index)
+if model_stage == "train":
+    float(corr_index)
 
 
 error = []
@@ -1242,13 +1276,13 @@ if model_stage == "train":
     plt.xlabel("Prediction Error [MPG]")
     _ = plt.ylabel("Count")
     
-    plt.savefig(os.path.join(model_training_img_file_saving_path , model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
-        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_predError_Distribution.png'), dpi=96,  bbox_inches='tight')
-    # plt.show()
+    plt.savefig(model_training_img_file_saving_path + model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
+        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_predError_Distribution.png', dpi=96,  bbox_inches='tight')
+    plt.show()
     # print('Test RMSE: %.3f' % rmse)
 
 
-# # 模型保存
+# # Model Save(模型保存)
 
 
 # if model_stage == "train":
@@ -1275,10 +1309,10 @@ else:
     print("Testing...")
 
 
-# # 对预测结果后处理
+# # Post-processing of the prediction results(对预测结果后处理)
 
 
-# ## 对预测小于0的部分进行取0处理
+# ## The part that is predicted to be less than 0 is processed as 0（对预测小于0的部分进行取0处理）
 
 
 if model_stage == "train":
@@ -1303,19 +1337,14 @@ print("pred_element_index:",pred_element_index)
 e_log_name[pred_element_index]
 
 
-# ## 根据元素范围还原对应分辨率的预测曲线
+# ## Reverse normalization reduces the prediction curve（根据归一化范围还原对应分辨率的预测曲线）
 
-if operate_standard == True:
-    testALL_Y_predict_final = sen.revivification_scaler(A_Y_predict_final_GY,e_log_name,pred_element_index)
-else:    
-    testALL_Y_predict_final = A_Y_predict_final_GY
+
+testALL_Y_predict_final = sen.revivification_scaler(A_Y_predict_final_GY,e_log_name,pred_element_index)
 if model_stage == "train":
-    if operate_standard == True:
-        true_Y = sen.revivification_scaler(dataY,e_log_name,pred_element_index)
-        Y_clac = sen.revivification_scaler(dataY_calc,e_log_name,pred_element_index)
-    else:
-        true_Y = dataY
-        Y_clac = dataY_calc
+    true_Y = sen.revivification_scaler(dataY,e_log_name,pred_element_index)
+    Y_clac = sen.revivification_scaler(dataY_calc,e_log_name,pred_element_index)
+
 
 if model_stage == "train":
     print(A_Y_predict_final_GY.shape,"testALL_Y_predict_final.shape:",testALL_Y_predict_final.shape,dataY_calc.shape)
@@ -1367,16 +1396,16 @@ else:
 plt.legend(loc='best')
 plt.grid(True)
 plt.savefig(pred_image_save_path + pred_image_name + '_PredictionAll.png', dpi=96,  bbox_inches='tight')
-# plt.show()
+plt.show()
 
 
-# # 训练阶段的验证操作到此程序结束
+# # The validation operation of the training phase ends with this program（训练阶段的验证操作到此程序结束）
 
 
 testdata_Y_predict_final = testALL_Y_predict_final
 
 
-# # 总评价模块
+# # Total Evaluation Module（总评价模块）
 
 
 add_flag = 0
@@ -1385,7 +1414,7 @@ if model_stage == "train":
     High_R_ALL = inputY.loc[:, [element_name]]
     High_R = np.array(High_R_ALL)
     High_R.shape = (len(High_R),)
-    print("真实高分辨率标定值为训练数据标签！！！")
+    print("真实标定值为训练数据标签！！！")
     add_flag = 1
     print(add_flag)
 else:
@@ -1398,12 +1427,12 @@ else:
         add_flag = 2
         print(add_flag)
     else:
-        print("无真实高分辨率标定值！！！")
+        print("无真实标定值！！！")
         add_flag = 3
         print(add_flag)
 
 
-# ## 绘制折线图和散点图
+# ## Draw line and scatter charts（绘制折线图和散点图）
 
 
 # 绘制折线图，预测结果与真实标定趋势对比
@@ -1427,9 +1456,9 @@ if model_stage == "train" and use_depth_log == True:
     plt.xlabel(element_name)
     plt.ylabel("DEPTH(m)")
     plt.legend(loc='upper left')
-    plt.savefig(os.path.join(model_training_img_file_saving_path , model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
-        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_constract_Real.png'), dpi=96,  bbox_inches='tight')
-    # plt.show()
+    plt.savefig(model_training_img_file_saving_path + model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
+        learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_constract_Real.png', dpi=96,  bbox_inches='tight')
+    plt.show()
         
 
 
@@ -1485,11 +1514,11 @@ if model_stage == "train" or ((model_stage == "test") and (add_flag == 2)):
     plt.ylim(value_min,value_max)
     plt.tight_layout()
     if model_stage == "train":    
-        plt.savefig(os.path.join(model_training_img_file_saving_path , model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
-            learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_constract_scatterMap.png'), dpi=96,  bbox_inches='tight')
+        plt.savefig(model_training_img_file_saving_path + model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
+            learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_constract_scatterMap.png', dpi=96,  bbox_inches='tight')
     else:
-        plt.savefig(os.path.join(model_testing_img_file_saving_path , model_testing_image_name + '_constract_scatterMap.png'), dpi=96,  bbox_inches='tight')
-    # plt.show()
+        plt.savefig(model_testing_img_file_saving_path + model_testing_image_name + '_constract_scatterMap.png', dpi=96,  bbox_inches='tight')
+    plt.show()
 
 
 if model_stage == "test" and use_depth_log == True:
@@ -1512,11 +1541,10 @@ if model_stage == "test" and use_depth_log == True:
         plt.plot(testdata_Y_predict_final,DEPTH_AddReslution,color="red", label="predict_final")
              
             
-    plt.xlabel(element_name)
+    plt.xlabel(element_name + "(%)")
     plt.ylabel("DEPTH(m)")
     plt.legend(loc='upper left')
-    plt.savefig(model_testing_img_file_saving_path + model_testing_image_name + '_visual.png', dpi=96,  bbox_inches='tight')
-    # plt.show()
+    plt.show()
 
 
 fig_cols = 2
@@ -1550,14 +1578,14 @@ elif (model_stage == "test") and (add_flag == 2):
 plt.legend(loc="upper right")
 plt.grid(linestyle = '--')
 if model_stage == "train":
-    plt.savefig(os.path.join(model_training_img_file_saving_path , model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
-    learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '-hist.png'), dpi=96,  bbox_inches='tight')
+    plt.savefig(model_training_img_file_saving_path + model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
+    learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '-hist.png', dpi=96,  bbox_inches='tight')
 else:
-    plt.savefig(os.path.join(model_testing_img_file_saving_path , model_testing_image_name + '-hist.png'), dpi=96,  bbox_inches='tight')
-# plt.show()
+    plt.savefig(model_testing_img_file_saving_path + model_testing_image_name + '-hist.png', dpi=96,  bbox_inches='tight')
+plt.show()
 
 
-# ## 预测值与真实标定值线性相关性分析
+# ## Linear correlation analysis between predicted and true calibration values(预测值与真实标定值线性相关性分析)
 
 
 if (model_stage == "train") or ((model_stage == "test") and (add_flag == 2)):
@@ -1580,7 +1608,7 @@ if (model_stage == "train") or ((model_stage == "test") and (add_flag == 2)):
 #         MAE = testALL_Y_predict_final - High_R_Label
 
 
-# ## 查看预测曲线和真实标定的分布
+# ## View the distribution of prediction curves and true calibrations(查看预测曲线和真实标定的分布)
 
 
 font = {'family':'SimHei',
@@ -1607,12 +1635,12 @@ if (model_stage == "train") or ((model_stage == "test") and (add_flag == 2)):
    
 
     if model_stage == "train":
-        plt.savefig(os.path.join(model_training_img_file_saving_path, model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
-            learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_add-R_hist.png'), dpi=96,  bbox_inches='tight')
+        plt.savefig(model_training_img_file_saving_path + model_training_img_name +"_" + element_name + '_'+ str(n_layers) + "_layers_" +  "_lr_" + str(
+            learning_rate) + "h_dim" + str(hidden_dim) + "_epoch_" + str(EPOCHS)+ '_add-R_hist.png', dpi=96,  bbox_inches='tight')
     else:
-        plt.savefig(os.path.join(model_testing_img_file_saving_path, model_testing_image_name + '_add-R-hist.png'), dpi=96,  bbox_inches='tight')
+        plt.savefig(model_testing_img_file_saving_path + model_testing_image_name + '_add-R-hist.png', dpi=96,  bbox_inches='tight')
 
-    # plt.show()
+    plt.show()
 elif ((model_stage == "test") and (add_flag == 3)):
     
     sns.set_style('white')
@@ -1626,14 +1654,14 @@ elif ((model_stage == "test") and (add_flag == 3)):
     plt.grid(linestyle = '--')     # 添加网格线
     plt.title("Pred and AddR Distribution")  # 添加图表名
     plt.savefig(model_testing_img_file_saving_path + model_testing_image_name + '_add-R-D.png', dpi=96,  bbox_inches='tight')
-    # plt.show()
+    plt.show()
     
 
 
-# # 曲线结果保存
+# # Save the curve results(曲线结果保存)
 
 
-# ## 结果文件文件头信息
+# ## Result file header information(结果文件文件头信息)
 
 
 # filename_A ： 'HP1_orginLog_6D_4075m-4280m_R_0.125.csv'
@@ -1648,10 +1676,7 @@ resolution_ratio = 1 / resolution
 resolution_ratio
 
 
-
-
-
-# ## 查看保存的结果曲线
+# ## View the saved result curves（查看保存的结果曲线）
 
 
 if use_depth_log == False:
@@ -1671,7 +1696,7 @@ if use_high_R_data:
     pd_data = pd.concat([pd_data0,pd_data1,pd_data2],axis=1)
 else:
     pd_data = pd.concat([pd_data0,pd_data1],axis=1)
-pd_data.to_csv(os.path.join(csv_file_saving_path , result_csv_name),mode='w',float_format='%.4f',sep='\t',index=None,header=True)
+pd_data.to_csv(csv_file_saving_path + result_csv_name,mode='w',float_format='%.4f',sep='\t',index=None,header=True)
 print("Prediction Algorithm is Finished!!")
 
 

@@ -64,25 +64,25 @@ print("tensorflow version:",tf.__version__)
 # ### 训练集所在位置
 
 
-layer_name = '青山口组'   # 青山口组 | 泉头组
+layer_name = 'QSK'   # QSK | QT
 
 
 # data/exp_curve_reconstract/exp_1/train/
 
 
-TrainDataPath = 'data/exp_curve_reconstract/exp_3/train'
+TrainDataPath = '../data/exp_curve_reconstract/exp_3/train/'
 
 
 # filename_AB:  
-# (1) 古页1_R_0.1250m_青山口组_2107m-2587m.csv;   
-# (2) 古页1_R_ 0.1250m_泉头组_2587m-2744m.csv;   
-# (3)古页1_R_0.1250m_青山口组_2107m-2587m_针对_朝21井_R_ 0.1250m_青山口组_1260m-1668m-修正深度_add_sample_weight.csv;  
-# (4)古页1_R_0.1250m_青山口组_2107m-2587m_针对_松页油1_R_0.1250m_青山口组_2105m-2448m-修正深度_add_sample_weight.csv;  
-# (5)古页1_R_ 0.1250m_泉头组_2587m-2744m_针对_朝21井_R_ 0.1250m_泉头组_1668m-1859m_add_sample_weight.csv;      
-# (6)古页1_R_ 0.1250m_泉头组_2587m-2744m_针对_松页油1_R_ 0.1250m_泉头组_2448m-2529m_add_sample_weight.csv;    
+# (1) GY1_R_0.1250m_QSK_2107m-2587m.csv;   
+# (2) GY1_R_ 0.1250m_QT_2587m-2744m.csv;   
+# (3)GY1_R_0.1250m_QSK_2107m-2587m_for_C21_R_ 0.1250m_QSK_1260m-1668m-修正深度_add_sample_weight.csv;  
+# (4)GY1_R_0.1250m_QSK_2107m-2587m_for_SYY1_R_0.1250m_QSK_2105m-2448m-修正深度_add_sample_weight.csv;  
+# (5)GY1_R_ 0.1250m_QT_2587m-2744m_for_C21_R_ 0.1250m_QT_1668m-1859m_add_sample_weight.csv;      
+# (6)GY1_R_ 0.1250m_QT_2587m-2744m_for_SYY1_R_ 0.1250m_QT_2448m-2529m_add_sample_weight.csv;    
 
 
-filename_AB = '古页1_R_ 0.1250m_青山口组_2107m-2587m.csv'   # 青山口组；  泉头组
+filename_AB = 'GY1_R_ 0.1250m_QSK_2107m-2587m.csv'   # QSK；  QT
 TrainDataPath = os.path.join(TrainDataPath,layer_name,filename_AB)
 print(TrainDataPath)
 
@@ -90,21 +90,21 @@ print(TrainDataPath)
 # ### 预测阶段测试集所在位置
 
 
-TestDataPath = 'data/exp_curve_reconstract/exp_3/test/'
+TestDataPath = '../data/exp_curve_reconstract/exp_3/test/'
 
 
 # data/exp_curve_reconstract/exp_1/test/;   data/exp_curve_reconstract/val/
 
 
 # filename_A为预测曲线对应的常规曲线数据:  
-# (1) 朝21井_R_ 0.1250m_青山口组_1260m-1668m-修正深度.csv    
-# (2) 松页油1_R_ 0.1250m_青山口组_2105m-2448m-修正深度.csv  
-# (3) 朝21井_R_ 0.1250m_泉头组_1668m-1859m.csv  
-# (4) 松页油1_R_ 0.1250m_泉头组_2448m-2529m.csv  
-# 齐平1井_R_ 0.1000m_青山口组_1649m-2089m.csv
+# (1) C21_R_ 0.1250m_QSK_1260m-1668m-修正深度.csv    
+# (2) SYY1_R_ 0.1250m_QSK_2105m-2448m-修正深度.csv  
+# (3) C21_R_ 0.1250m_QT_1668m-1859m.csv  
+# (4) SYY1_R_ 0.1250m_QT_2448m-2529m.csv  
+# QP1_R_ 0.1000m_QSK_1649m-2089m.csv
 
 
-filename_A =  '朝21井_R_ 0.1250m_青山口组_1260m-1668m-修正深度.csv' 
+filename_A =  'C21_R_0.1250m_QSK_1260m-1668m.csv'
 
 
 addR_well_name = filename_A.split(".")[0]
@@ -120,7 +120,7 @@ TestDataPath = os.path.join(TestDataPath,layer_name,filename_A)
 use_high_R_data = True #True # False
 
 
-# 高分辨率相对于低分辨率的倍数, default value = 10 (对应于0.1m); 8 (对应于0.125m)
+# resolution, default value = 10 (对应于0.1m); 8 (对应于0.125m)
 resolution = 8
 
 
@@ -128,16 +128,16 @@ resolution = 8
 
 
 
-HighRDataPath = 'data/exp_curve_reconstract/exp_3/test/'
+HighRDataPath = '../data/exp_curve_reconstract/exp_3/test/'
 
 
 # 理论上与filename_A在同一处，标签文件
 
 
-# 朝21井_R_ 0.1250m_青山口组_1260m-1668m-修正深度.csv
-# 松页油1_R_0.1250m_青山口组_2105m-2448m-修正深度.csv
+# C21_R_ 0.1250m_QSK_1260m-1668m-修正深度.csv
+# SYY1_R_0.1250m_QSK_2105m-2448m-修正深度.csv
 
-# filename_C_H = '朝21井_R_ 0.1250m_泉头组_1668m-1859m.csv' 
+# filename_C_H = 'C21_R_ 0.1250m_QT_1668m-1859m.csv' 
 filename_C_H = filename_A
 
 
@@ -159,13 +159,6 @@ input_vectors = ["DT","CNL","DEN","GR","RD","RS"]
 
 
 # ## 定义因变量
-
-
-# 定义要训练的参数模型
-# 读取元素曲线训练数据，包括"Al","Ca","Fe","K","Mg","Na","Si"等元素曲线  
-# element_name = |"Al"|"Ca"|"Fe"|"K"|"Mg"|"Na"|"Si"|   
-
-
 # 定义要目标曲线PERM、POR、SW
 # element = ["孔隙度","饱和度","渗透率"]
 element = ["DTXX"]
@@ -991,7 +984,7 @@ if plot_modelnet == True:
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 if not os.path.exists(log_path):
-    # 针对第一次训练
+    # for第一次训练
     os.mkdir(log_path)
 my_log_dir = os.path.join(log_path,model_type.lower())
 print("my_log_dir:",my_log_dir)
