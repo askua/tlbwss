@@ -10,3 +10,4 @@ statsmodels==0.14.2
 tensorflow_gpu==2.9.0
 graphviz
 xgboost==2.1.1
+scikit-learn==1.1.2
