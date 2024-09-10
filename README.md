@@ -10,17 +10,17 @@ You need to install Graphviz （https://graphviz.org/download/） to visualize t
 #### Requirement
 matplotlib>=3.5.2  
 numpy>=1.22.4  
-pandas==2.2.2
-pydot_ng==2.0.0
-pygame==2.1.2
-scikit_learn==1.1.2
-scipy==1.14.1
-seaborn==0.11.0
-statsmodels==0.14.2
-tensorflow_gpu==2.9.0
-graphviz
-scikit-learn==1.1.2
-xgboost==2.1.1
+pandas==2.2.2  
+pydot_ng==2.0.0  
+pygame==2.1.2  
+scikit_learn==1.1.2  
+scipy==1.14.1  
+seaborn==0.11.0  
+statsmodels==0.14.2  
+tensorflow_gpu==2.9.0  
+graphviz  
+scikit-learn==1.1.2  
+xgboost==2.1.1  
 
 
 

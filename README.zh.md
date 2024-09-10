@@ -16,10 +16,10 @@ scikit_learn==1.1.2
 scipy==1.14.1  
 seaborn==0.11.0  
 statsmodels==0.14.2  
-tensorflow_gpu>=2.4.0 
-graphviz
-scikit-learn==1.1.2
-xgboost==2.1.1
+tensorflow_gpu==2.9.0  
+graphviz  
+scikit-learn==1.1.2  
+xgboost==2.1.1  
 #### 说明
 
 1. prepare_data_utils_notebooks 文件夹中有关于数据预处理的代码。
