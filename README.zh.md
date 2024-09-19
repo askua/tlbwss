@@ -22,10 +22,21 @@ scikit-learn==1.1.2
 xgboost==2.1.1  
 #### 说明
 
-1. prepare_data_utils_notebooks 文件夹中有关于数据预处理的代码。
-2. curve_reconstract_TF文件夹展示关于 double experts network 的模型，其他新模型可以添加到 senmodels.py 中。
-3. lithofacies_classification_TF文件夹是 BiGRU-MHSA 模型，有助于岩相分类，其他新模型可以添加到senmodels_classification.py
-4. data 文件夹展示示例数据
+以下是您提供内容的中文翻译：
+
+---
+
+1. **prepare_data_utils_notebooks** 文件夹包含数据预处理的代码。您可以按照注释中的说明处理自定义数据。  
+2. **curve_reconstruct_TF** 笔记本展示了基于双专家网络的模型，其他新模型可以被添加到 **senmodels.py** 中。  
+3. **lithofacies_classification_TF** 笔记本包含一个 BiGRU-MHSA 模型，旨在帮助进行岩相分类。其他新模型也可以添加到 **senmodels_classification.py** 中。  
+4. **data** 文件夹包含示例数据。默认的数据文件格式为 CSV，输入数据类型为 NumPy 的 ndarray。  
+
+在训练模型时，请将代码中的变量设置为 `model_stage == "train"`。在对测试数据集进行推断时，请将其更改为 `model_stage == "test"`。该操作适用于 **curve_reconstruct_TF** 和 **lithofacies_classification_TF**，例如在 **tf2_curve_reconstruct.ipynb** 和 **tf2_facies_classification.ipynb** 中。
+
+---
+
+如需进一步修改或澄清，请随时告知！
+
 
 ![workflow_chart](figure/workflow_chart_new.png "workflow_chart")
 **图 1 工作流程图**
