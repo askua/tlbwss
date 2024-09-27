@@ -1,8 +1,9 @@
 # TLBWSS
 
 ### Description
-It's an implements about "Transfer learning based on weights of similarity sample for well logging evaluation method 
-and application".
+It's an implements about "Transfer learning for well logging formation evaluation using similarity weights" 
+in Artificial Intelligence in Geosciences. DOI: [https://doi.org/10.1016/j.aiig.2024.100091](https://doi.org/10.1016/j.aiig.2024.100091).
+
 
 #### Software Architecture
 Software architecture is based on python 3.10+, tesorflow 2.4+, 
@@ -45,6 +46,11 @@ such as tf2_curve_reconstract.ipynb and tf2_facies_classification.ipynb.
 
 ![BiGRU-MHSA_network](figure/BiGRU-MHSA_network.png "BiGRU-MHSA_network")
 **Figure 3 BiGRU-MHSA network**
+
+**Cite**
+```
+Binsen Xu, Zhou Feng, Jun Zhou, Rongbo Shao, Hongliang Wu, Peng Liu, Han Tian, Weizhong Li, Lizhi Xiao, 2024. Transfer learning for well logging formation evaluation using similarity weights. Artificial Intelligence in Geosciences. Vol 5. DOI: https://doi.org/10.1016/j.aiig.2024.100091
+```
 
 Email: xbs150@163.com
 
