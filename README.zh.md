@@ -1,7 +1,8 @@
 # TLBWSS
 
 ### 描述
-这是一种关于“基于相似性样本权重的测井评估方法的迁移学习”的实现和应用。
+这是杂志Artificial Intelligence in Geosciences一种关于《基于相似性样本权重迁移学习的测井地层评价方法》的实现和应用。DOI: [https://doi.org/10.1016/j.aiig.2024.100091](https://doi.org/10.1016/j.aiig.2024.100091)
+
 
 #### 软件架构
 软件架构基于 python 3.10+、tesorflow 2.4+、, xgboost, scikit-learn
@@ -46,5 +47,8 @@ xgboost==2.1.1
 
 ![BiGRU-MHSA_network](figure/BiGRU-MHSA_network.png "BiGRU-MHSA_network")
 **图 3 BiGRU-MHSA 网络**
-
+**引用**
+```
+Binsen Xu, Zhou Feng, Jun Zhou, Rongbo Shao, Hongliang Wu, Peng Liu, Han Tian, Weizhong Li, Lizhi Xiao, 2024. Transfer learning for well logging formation evaluation using similarity weights. Artificial Intelligence in Geosciences. Vol 5. DOI: https://doi.org/10.1016/j.aiig.2024.100091
+```
 电子邮件： xbs150@163.com
